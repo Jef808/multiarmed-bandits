@@ -44,6 +44,11 @@ public:
      */
     double expectation(const Action& action) const;
 
+    /**
+     * Get the action with highest expectation.
+     */
+    Action best_action() const;
+
 private:
     /* The number of actions. */
     const size_t N;
@@ -55,6 +60,8 @@ private:
     std::mt19937 m_gen{ m_rd() };
     /* The normal distribution which shapes the random values. */
     std::normal_distribution<> m_dist;
+    /* The action with the highest expectation. */
+    Action m_best_action;
 };
 
 #endif // MULTIARMED_BANDITS_H_

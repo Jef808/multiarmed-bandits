@@ -8,4 +8,5 @@ add_executable(MAB_epsilon_greedy
   agent_greedy.cpp
   test_epsilon_greedy.cpp)
 target_link_libraries(MAB_epsilon_greedy PRIVATE
-  multiarmed_bandit)
+  multiarmed_bandit
+  fmt::fmt)

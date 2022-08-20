@@ -17,12 +17,20 @@ void NArmedBandit::reset() {
     m_gen.seed(m_rd());
     std::generate_n(std::back_inserter(m_values), N,
                     [&](){ return m_dist(m_gen); });
+
+    m_best_action.idx =
+        std::distance(
+            m_values.begin(), std::max_element(m_values.begin(), m_values.end()));
 }
 
 double NArmedBandit::get_reward(const Action& action) {
     return m_values[action.idx] + m_dist(m_gen);
 }
 
-double NArmedBandit::expectation(const Action& action) const{
+double NArmedBandit::expectation(const Action& action) const {
     return m_values[action.idx];
+}
+
+Action NArmedBandit::best_action() const {
+    return m_best_action;
 }

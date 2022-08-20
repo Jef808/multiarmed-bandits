@@ -19,7 +19,7 @@
 constexpr auto default_number_of_actions = 10;
 
 /**
- * Structure wrapping actions with metadata.
+ * Structure to accumulate data along the search.
  */
 struct ExtAction;
 
@@ -39,14 +39,14 @@ class AgentGreedy {
 public:
   explicit AgentGreedy(NArmedBandit &bandit, double epsilon=0.0);
 
-  void sample();
+  void sample(std::vector<ExtAction>& buf, size_t n_steps=1);
 
   /**
    * Select the action using the greedy policy with
    * probability 1-epsilon, and select a random action
    * with probability epsilon.
    */
-  Action select() const;
+  Action select();
 
   /**
    * Update the agent's statistics after a
@@ -70,7 +70,7 @@ public:
    * Select the action with the largest estimated
    * expected reward.
    */
-  Action Policy_Greedy() const;
+  Action Policy_Greedy();
 
   /**
    * Select an action randomly.
@@ -80,7 +80,9 @@ public:
   /**
    * Access the agent's cumulated data
    */
-  const std::vector<ExtAction>& get_data() const { return m_actions; }
+  void dump_episode_data(std::vector<ExtAction>& buf);
+
+  size_t n_actions() const { return m_bandit.number_of_actions(); }
 
 private:
   size_t m_time{0};
@@ -90,7 +92,7 @@ private:
   double m_initial_estimate{0.0};
   double m_epsilon{0.0};
   mutable std::bernoulli_distribution m_bernoulli{m_epsilon};
-  mutable std::uniform_int_distribution<> m_uniform{0, default_number_of_actions};
+  mutable std::uniform_int_distribution<> m_uniform;
   std::random_device m_rd;
   mutable std::mt19937 m_gen{m_rd()};
 };
@@ -99,12 +101,10 @@ struct ExtAction {
   explicit ExtAction(size_t idx);
 
   Action action;
-  int visits{0};
-  std::vector<double> rewards;
-  double total{0};
+  int visits;
+  double total;
 
   operator Action() const { return action; }
-  bool operator<(const ExtAction& other) const;
   bool operator==(const Action a) const;
 };
 
