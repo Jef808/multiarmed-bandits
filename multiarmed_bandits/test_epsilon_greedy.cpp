@@ -73,25 +73,32 @@ bool parse_opts(int argc, char *argv[], size_t &n_actions, double &epsilon,
   return true;
 }
 
-std::string make_log_fn(size_t n_actions, double epsilon, size_t n_steps, size_t n_episodes) {
+std::string make_log_fn(std::string_view policy_name, int n_actions,
+                        int n_episodes, int n_steps, double epsilon) {
+  int epsilon_100 = static_cast<int>(100.0 * epsilon);
   std::stringstream ss;
-  int epsilon_pc = 100 * epsilon;
-  ss << log_dir << "epsilon_greedy_"
-     << n_actions << '_'
-     << epsilon_pc << '_'
-     << n_steps << '_'
-     << n_episodes << ".json";
+  ss << log_dir << policy_name << '_' << n_actions << '_' << n_episodes << '_'
+     << n_steps << '_' << epsilon_100 << ".json";
   return ss.str();
 }
 
-void json_log(std::string_view log_fn, nlohmann::json &&j) {
-  std::ofstream ofs{log_fn.data()};
+void json_log(nlohmann::json &&j) {
+  using namespace nlohmann;
+  json json = j;
+  std::string policy_name = json["policy"].get<json::string_t>();
+  std::uint64_t n_actions = json["n_actions"].get<json::number_unsigned_t>();
+  std::uint64_t n_steps = json["n_steps"].get<json::number_unsigned_t>();
+  std::uint64_t n_episodes = json["n_episodes"].get<json::number_unsigned_t>();
+  double epsilon = json["epsilon"].get<json::number_float_t>();
+
+  std::string fn = make_log_fn(policy_name, n_actions, n_episodes, n_steps, epsilon);
+  std::ofstream ofs{ fn };
   if (not ofs) {
-    fmt::print("WARNING: Unable to open log file: {0}\n", log_fn);
+    fmt::print("WARNING: Unable to open log file: {0}\n", fn);
   }
 
   ofs << j.dump(4) << std::endl;
-  fmt::print("Wrote output to log file {0}\n", log_fn);
+  fmt::print("Wrote output to log file {0}\n", fn);
 }
 
 int main(int argc, char *argv[]) {
@@ -145,6 +152,7 @@ int main(int argc, char *argv[]) {
 
   // Log results
   json j;
+  j["policy"] = "epsilon_greedy";
   j["n_actions"] = n_actions;
   j["epsilon"] = epsilon;
   j["n_steps"] = n_steps;
@@ -158,7 +166,7 @@ int main(int argc, char *argv[]) {
     j["losses"].push_back(l);
   }
 
-  json_log(make_log_fn(n_actions, epsilon, n_steps, n_episodes), std::move(j));
+  json_log(std::move(j));
 
   return EXIT_SUCCESS;
 }
