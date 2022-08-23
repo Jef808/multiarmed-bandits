@@ -1,12 +1,11 @@
 #include "agent_greedy.h"
 #include "multiarmed_bandits.h"
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <cassert>
-#include <cmath>
 #include <fstream>
-#include <iostream>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -19,147 +18,147 @@ constexpr size_t default_n_actions = 10;
 constexpr size_t default_n_steps = 1000;
 constexpr size_t default_n_episodes = 2000;
 
-Action highest_expectation(const NArmedBandit &bandit) {
-    Action best_a{0};
-    double best_v{bandit.expectation(best_a)};
+const std::string log_dir = "/home/jfa/projects/ai/logs/multiarmed_bandits/";
 
-    for (size_t i = 1; i < bandit.number_of_actions(); ++i) {
-        Action action{i};
-        if (double expec_v = bandit.expectation(action);
-            expec_v > best_v)
-        {
-            best_a = action;
-            best_v = expec_v;
-        }
+using ExtAction = ExtActionT<Action>;
+
+inline double loss(const NArmedBandit &bandit, const Action &chosen_action) {
+  return bandit.expectation(bandit.best_action()) -
+         bandit.expectation(chosen_action);
+}
+
+bool parse_opts(int argc, char *argv[], size_t &n_actions, double &epsilon,
+                size_t &n_steps, size_t &n_episodes) {
+
+  std::vector<std::string_view> args;
+  for (auto i = 0; i < argc; ++i) {
+    args.push_back(argv[i]);
+  }
+
+  auto it = std::find_if(args.begin(), args.end(), [](auto arg){
+    return arg[0] == '-';
+  });
+  while (it != args.end()) {
+    char c = (*it)[1];
+    try {
+      switch (c) {
+      case 'a':
+        n_actions = std::stoi((it + 1)->data());
+        fmt::print("Set number of actions to {0}\n", n_actions);
+        break; // number of actions
+      case 'e':
+        epsilon = std::stod((it + 1)->data());
+        fmt::print("Set epsilon to {0}\n", epsilon);
+        break; // epsilon
+      case 's':
+        n_steps = std::stoi((it + 1)->data());
+        fmt::print("Set number of steps to {0}\n", n_steps);
+        break; // number of steps
+      case 'n':
+        n_episodes = std::stoi((it + 1)->data());
+        fmt::print("Set number of episodes to {0}\n", n_episodes);
+        break; // number of episodes
+      default:
+        fmt::print("Unrecognized command line argument.");
+        break;
+      }
+    } catch (std::exception &e) {
+      fmt::print("Invalid input parameter: {0}\n", e.what());
+      return false;
     }
-    return best_a;
+    it = std::find_if(it + 1, args.end(), [](auto arg){
+      return arg[0] == '-';
+    });
+  }
+  return true;
 }
 
-/**
- * Accumulate the difference in expectations between the best choices and
- * the choices that were made.
- */
-inline double total_loss(const NArmedBandit& bandit, const std::vector<ExtAction>& eas) {
-    double max_val = bandit.expectation(bandit.best_action());
-    return std::accumulate(eas.begin(), eas.end(), 0.0, [&bandit, max_val](double& s, const auto& ea){
-        return s += ea.visits * (max_val - bandit.expectation(ea.action));
-    });
+std::string make_log_fn(size_t n_actions, double epsilon, size_t n_steps, size_t n_episodes) {
+  std::stringstream ss;
+  int epsilon_pc = 100 * epsilon;
+  ss << log_dir << "epsilon_greedy_"
+     << n_actions << '_'
+     << epsilon_pc << '_'
+     << n_steps << '_'
+     << n_episodes << ".json";
+  return ss.str();
 }
 
-/**
- * Accumulate the rewards from each choices made.
- */
-inline double total_val(const std::vector< ExtAction >& eas, const double prior=0.0) {
-    return std::accumulate(eas.begin(), eas.end(), 0.0, [](double& s, const ExtAction& ea){
-        return s += ea.total;
-    });
+void json_log(std::string_view log_fn, nlohmann::json &&j) {
+  std::ofstream ofs{log_fn.data()};
+  if (not ofs) {
+    fmt::print("WARNING: Unable to open log file: {0}\n", log_fn);
+  }
+
+  ofs << j.dump(4) << std::endl;
+  fmt::print("Wrote output to log file {0}\n", log_fn);
 }
 
 int main(int argc, char *argv[]) {
   using namespace nlohmann;
 
-  size_t n_actions = 10;
-  double epsilon = 0.1;
-  size_t n_steps = 1000;
-  size_t n_episodes = 2000;
+  size_t n_actions = default_n_actions;
+  double epsilon = default_epsilon;
+  size_t n_steps = default_n_steps;
+  size_t n_episodes = default_n_episodes;
 
-  std::vector<std::string_view> args;
-  for (auto i = 0; i < argc; ++i) {
-      args.push_back(argv[i]);
-  }
-
-  for (auto cc : { "-a", "-e", "-s", "-N"}) {
-      auto it = std::find(args.begin(), args.end(), cc);
-      if (it != args.end()) {
-          switch ((*it)[1]) {
-              case 'a': n_actions = std::stoi((it+1)->data()); break;
-              case 'e': epsilon = std::stod((it+1)->data()); break;
-              case 's': n_steps = std::stoi((it+1)->data()); break;
-              case 'N': n_episodes = std::stoi((it+1)->data()); break;
-              default: break;
-          }
-      }
-  }
+  parse_opts(argc, argv, n_actions, epsilon, n_steps, n_episodes);
 
   NArmedBandit bandit{n_actions};
   AgentGreedy agent{bandit, epsilon};
 
-  // Initialize buffers for capturing snapshots of
-  // the learning agents.
-  std::vector< std::vector< ExtAction > > snapshots;
-  for (size_t i = 0; i < n_episodes; ++i) {
-      auto& eas = snapshots.emplace_back();
-      for (size_t a = 0; a < n_actions; ++a) {
-          eas.emplace_back(a);
-      }
-  }
-
   // Get the maximal reward expectation to compute a loss function.
   double value_best_action = bandit.expectation(bandit.best_action());
 
-  // To vizualize the evolution of the learning process.
-  double cumulative_total = 0.0;
-  double cumulative_loss = 0.0;
+  // Cumulative rewards for each step.
+  std::vector<double> rewards;
+  rewards.resize(n_steps, 0.0);
 
-  json j = json::array();
+  // Cumulative losses for each step.
+  std::vector<double> losses;
+  losses.resize(n_steps, 0.0);
+
+  Action action{};
+  double reward{};
 
   // Start the training process
-  for (size_t n = 0; n < n_episodes; ++n)
-  {
-      // Let the agent sample rewards for one episode
-      // and extract the statistics generated.
-      agent.sample(snapshots[n], n_steps);
+  for (size_t n = 0; n < n_episodes; ++n) {
 
-      json jarray = json::array();
+    // Sample the environment for the designated number of steps.
+    for (size_t s = 0; s < n_steps; ++s) {
+      std::tie(action, reward) = agent.sample();
 
-      for (size_t a = 0; a < n_actions; ++a)
-      {
-          assert(snapshots[n][a].action.idx == a
-                 && "snapshots' action indices out of order");
+      // We collect rewards and losses for each step.
+      rewards[s] += reward;
+      losses[s] += loss(bandit, action);
+    }
 
-          json ja;
-          ja["action"] = a;
-
-          int visits = snapshots[n][a].visits;
-          double total = snapshots[n][a].total;
-          double value = bandit.expectation(Action{a});
-          double loss = visits * (value_best_action - value);
-
-          cumulative_total += total;
-          cumulative_loss += loss;
-
-          ja["visits"] = visits;
-          ja["average"] = total/visits;
-          ja["expected_value"] = value;
-          ja["loss"] = loss;
-
-          jarray.push_back(ja);
-          // std::cout << std::setprecision(2)
-          //           << "\n\033[1mAction\033[0m " << a
-          //           << ": Visits = " << visits
-          //           << ", Avg = " << (visits > 0? total/visits: 0.0)
-          //           << ", Expected = " << value
-          //           << ", Loss = " << loss << std::endl;
-      }
-
-      // json jepisode;
-      // jepisode["episode"] = n;
-      // jepisode.push_back(jarray);
-      json ep = json::array({ {"episode", n}, jarray });
-      j.push_back(ep);
-      // std::cout << "  \033[1mTotal avg reward\033[0m = "
-      //           << cumulative_total / (n * n_steps)
-      //           << ", \033[1mTotal loss\033[0m = "
-      //           << cumulative_loss << std::endl;
+    // Reset the agent's memory in preparation for the next round.
+    agent.reset(epsilon);
   }
 
-  std::ofstream ofs{ "/home/jfa/projects/ai/greedy.json" };
-  ofs << j.dump(4) << std::endl;
+  // Make each entry equal to the average over the episodes
+  for (size_t s = 0; s < n_steps; ++s) {
+    rewards[s] /= n_episodes;
+    losses[s] /= n_episodes;
+  }
 
-  // for (size_t i = 0; i < default_n_actions; ++i) {
-  //     std::cout << "Action " << i << ": " << "Average loss = " << results[i] << std::endl;
-  // }
+  // Log results
+  json j;
+  j["n_actions"] = n_actions;
+  j["epsilon"] = epsilon;
+  j["n_steps"] = n_steps;
+  j["n_episodes"] = n_episodes;
+  j["rewards"] = json::array({});
+  for (auto r : rewards) {
+    j["rewards"].push_back(r);
+  }
+  j["losses"] = json::array({});
+  for (auto l : losses) {
+    j["losses"].push_back(l);
+  }
 
+  json_log(make_log_fn(n_actions, epsilon, n_steps, n_episodes), std::move(j));
 
   return EXIT_SUCCESS;
 }

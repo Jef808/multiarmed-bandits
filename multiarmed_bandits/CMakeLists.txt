@@ -4,9 +4,15 @@ add_library(multiarmed_bandit
 
 
 add_executable(MAB_epsilon_greedy
+  policy.h
   agent_greedy.h
   agent_greedy.cpp
   test_epsilon_greedy.cpp)
+
+
 target_link_libraries(MAB_epsilon_greedy PRIVATE
   multiarmed_bandit
-  fmt::fmt)
+  fmt::fmt
+  tensorboard_logger)
+# target_include_directories(MAB_epsilon_greedy PRIVATE
+#   ${tensorboard_logger_INCLUDE_DIRS})

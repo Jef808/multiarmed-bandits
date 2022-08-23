@@ -1,6 +1,3 @@
-#ifndef AGENT_H_
-#define AGENT_H_
-
 /**
  * Let ${a_1, \ldots, a_n}$ be the possible actions which
  * can be taken at each time step.
@@ -9,25 +6,16 @@
  * action $a$,
  * and by $Q_t(a)$ the estimated value on the $t$th time step.
  */
+#ifndef AGENT_H_
+#define AGENT_H_
+
 #include "multiarmed_bandits.h"
+#include "policy.h"
 
 #include <cstddef>
 #include <cstdlib>
 #include <numeric>
 #include <random>
-
-constexpr auto default_number_of_actions = 10;
-
-/**
- * Structure to accumulate data along the search.
- */
-struct ExtAction;
-
-/**
- * Structure to order ExtAction instances by
- * decreasing values of their sampled averages.
- */
-struct CmpSampleAverage;
 
 /**
  * Agent that mostly makes simple greedy choices according
@@ -36,10 +24,12 @@ struct CmpSampleAverage;
  * a random choice.
  */
 class AgentGreedy {
+  using ExtAction = ExtActionT< Action >;
+
 public:
   explicit AgentGreedy(NArmedBandit &bandit, double epsilon=0.0);
 
-  void sample(std::vector<ExtAction>& buf, size_t n_steps=1);
+  std::pair<Action, double> sample();
 
   /**
    * Select the action using the greedy policy with
@@ -60,28 +50,6 @@ public:
    */
   void reset(double epsilon=0.0);
 
-  /**
-   * Estimate the value at time $t$ by averaging the rewards
-   * received up to then.
-   */
-  double Q_SampleAverage(const ExtAction &a) const;
-
-  /**
-   * Select the action with the largest estimated
-   * expected reward.
-   */
-  Action Policy_Greedy();
-
-  /**
-   * Select an action randomly.
-   */
-  Action Policy_Random() const;
-
-  /**
-   * Access the agent's cumulated data
-   */
-  void dump_episode_data(std::vector<ExtAction>& buf);
-
   size_t n_actions() const { return m_bandit.number_of_actions(); }
 
 private:
@@ -89,39 +57,16 @@ private:
   NArmedBandit &m_bandit;
   std::vector<ExtAction> m_actions;
 
+  Policy_Greedy m_greedy{};
+  Policy_Random m_random{};
+  //  CmpSampleAverage m_Cmp;
+
   double m_initial_estimate{0.0};
   double m_epsilon{0.0};
   mutable std::bernoulli_distribution m_bernoulli{m_epsilon};
   mutable std::uniform_int_distribution<> m_uniform;
   std::random_device m_rd;
   mutable std::mt19937 m_gen{m_rd()};
-};
-
-struct ExtAction {
-  explicit ExtAction(size_t idx);
-
-  Action action;
-  int visits;
-  double total;
-
-  operator Action() const { return action; }
-  bool operator==(const Action a) const;
-};
-
-struct CmpSampleAverage {
-  /**
-   * @Param prior  The initial guess for the expected value of
-   * an action which has not been visited yet.
-   */
-  explicit CmpSampleAverage(double prior=0.0);
-
-  /* Compute the average reward observed to date. */
-  double QFunction(const ExtAction& a) const;
-  /* Sort in decreasing order. */
-  bool operator()(const ExtAction& a, const ExtAction& b) const;
-
-  /* Initial QValue. */
-  double m_prior;
 };
 
 #endif // AGENT_H_
