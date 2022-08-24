@@ -6,12 +6,13 @@ add_library(MAB_agents INTERFACE
   agent.h)
 
 add_executable(MAB_epsilon_greedy
-  policy.h
-  agent_greedy.h
-  agent_greedy.cpp
+  # policy.h
+  # agent_greedy.h
+  # agent_greedy.cpp
   test_epsilon_greedy.cpp)
 target_link_libraries(MAB_epsilon_greedy PRIVATE
   MAB
+  MAB_agents
   fmt::fmt)
 
 

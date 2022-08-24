@@ -7,6 +7,7 @@
 #include <numeric>
 #include <algorithm>
 #include <cassert>
+#include <utility>
 #include <random>
 
 template <typename Policy> class Agent {
@@ -50,15 +51,13 @@ private:
 
 template <typename Policy>
 inline Agent<Policy>::Agent(NArmedBandit &bandit, Policy &&policy)
-    : m_bandit{bandit}, m_actions{}, m_policy{policy} {
+    : m_bandit{bandit}, m_actions{}, m_policy{std::move(policy)} {
     reset();
 }
 
 template <typename Policy> std::pair<Action, double> Agent<Policy>::sample() {
   Action action = m_policy(m_actions);
   double reward = m_bandit.get_reward(action);
-
-
 
   update_stats(action, reward);
 
@@ -88,6 +87,8 @@ template <typename Policy> void Agent<Policy>::reset() {
                       ret.total = dist(gen);
                       return ret;
                   });
+
+  m_policy.reset();
 }
 
 template <typename Policy>

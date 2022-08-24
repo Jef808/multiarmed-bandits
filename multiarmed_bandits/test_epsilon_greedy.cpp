@@ -1,5 +1,6 @@
-#include "agent_greedy.h"
+#include "agent.h"
 #include "multiarmed_bandits.h"
+#include "policies.h"
 
 #include <algorithm>
 #include <array>
@@ -112,10 +113,8 @@ int main(int argc, char *argv[]) {
   parse_opts(argc, argv, n_actions, epsilon, n_steps, n_episodes);
 
   NArmedBandit bandit{n_actions};
-  AgentGreedy agent{bandit, epsilon};
-
-  // Get the maximal reward expectation to compute a loss function.
-  double value_best_action = bandit.expectation(bandit.best_action());
+  Agent< Policy_Greedy > agent(bandit, Policy_Greedy{epsilon});
+  //AgentGreedy agent{bandit, epsilon};
 
   // Cumulative rewards for each step.
   std::vector<double> rewards;
@@ -127,6 +126,16 @@ int main(int argc, char *argv[]) {
 
   Action action{};
   double reward{};
+
+  // int total_visits;
+  // std::vector<int> action_visits;
+  // std::vector<double> action_values;
+  // std::vector<double> action_pvalues;
+  std::vector<double> action_qvalues;
+  std::generate_n(std::back_inserter(action_qvalues),
+                  bandit.number_of_actions(), [&bandit, n = 0]() mutable {
+                    return bandit.expectation(Action{static_cast<size_t>(n++)});
+                  });
 
   // Start the training process
   for (size_t n = 0; n < n_episodes; ++n) {
@@ -141,7 +150,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Reset the agent's memory in preparation for the next round.
-    agent.reset(epsilon);
+    agent.reset();
   }
 
   // Make each entry equal to the average over the episodes
@@ -164,6 +173,10 @@ int main(int argc, char *argv[]) {
   j["losses"] = json::array({});
   for (auto l : losses) {
     j["losses"].push_back(l);
+  }
+  j["true_values"] = json::array({});
+  for (auto v : action_qvalues) {
+    j["true_values"].push_back(v);
   }
 
   json_log(std::move(j));

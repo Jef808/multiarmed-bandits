@@ -27,6 +27,9 @@ struct Policy_UCB {
   void get_action_values(const std::vector<ExtActionT<Action>>& actions,
                          std::vector<double>& ucb_values) const;
 
+  // For compatibility
+  void reset();
+
   double c;
 };
 
@@ -68,6 +71,10 @@ void Policy_UCB::get_action_values(const std::vector<ExtActionT<Action>>& action
                                      [](int& s, const auto &ea) { return s += ea.visits; });
     std::transform(actions.begin(), actions.end(), std::back_inserter(ucb_values),
                    [&total_visits, C=this->c](const auto& ea){ return UCB(C, total_visits, ea); });
+}
+
+void Policy_UCB::reset() {
+
 }
 
 #endif // POLICY_UCB_H_
