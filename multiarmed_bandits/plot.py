@@ -16,10 +16,13 @@ def _main():
     ax3.set_ylabel("Expected Value")
     log_dir = Path(sys.argv[1])
     ax3_init = False
+    x_init = False
     for f in log_dir.glob("*.json"):
         with open(f, 'r') as fin:
             data = json.load(fin)
-            x = np.arange(0, data["n_steps"], 1)
+            if not x_init:
+                x = np.arange(0, data["n_steps"], 1)
+                x_init = True
             ax1.plot(x, data["rewards"], label=str(data["epsilon"]))
             ax2.plot(x, data["losses"], label=str(data["epsilon"]))
             if not ax3_init:

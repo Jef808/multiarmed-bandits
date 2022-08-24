@@ -22,9 +22,10 @@
 constexpr double default_exploration_constant = 2;
 constexpr size_t default_n_actions = 10;
 constexpr size_t default_n_steps = 1000;
+constexpr size_t default_stepsize = 1;
 constexpr size_t default_n_episodes = 2000;
-constexpr double default_debug = false;
-constexpr double default_help = false;
+constexpr bool default_debug = false;
+constexpr bool default_help = false;
 
 const std::string log_dir = "/home/jfa/projects/ai/logs/multiarmed_bandits/";
 
@@ -75,8 +76,8 @@ OutputIter help_line(OutputIter out, const char o_short,
     std::string spaces = std::string(n_spaces, ' ');
     std::copy(spaces.begin(), spaces.end(), out);
     std::string_view nsv = sv.substr(0, COL_MAX);
-    auto n = nsv == sv? sv.size(): nsv.find_last_of(" \0");
-    std::copy_n(nsv.begin(), n-1, out);
+    auto n = nsv == sv ? sv.size() : nsv.find_last_of(" \0");
+    std::copy_n(nsv.begin(), n, out);
     sv.remove_prefix(n);
     out = '\n';
     sz = -1;
@@ -101,16 +102,29 @@ void print_usage(std::string_view prog_name) {
 
   out = help_line(out, 's', "steps", "Number of steps", "N", true);
 
-  out = help_line(out, 's', "episodes", "Number of episodes", "N", true);
+  out = help_line(out, 'j', "stepsize", "Step size", "SIZE", true);
+
+  out = help_line(out, 'n', "episodes", "Number of episodes", "N", true);
 
   out = help_line(out, 'd', "debug", "Debug flag", "", false);
 
   out = help_line(out, 'h', "help", "Print this message", "", false);
 }
 
-bool parse_opts(int argc, char *argv[], size_t &n_actions,
-                double &exploration_constant, size_t &n_steps,
-                size_t &n_episodes, bool &debug, bool &help) {
+struct Options {
+  size_t n_actions{ default_n_actions };
+  double exploration_constant {default_exploration_constant};
+  size_t stepsize {default_stepsize};
+  size_t n_steps {default_n_steps};
+  size_t n_episodes {default_n_episodes};
+  bool debug {default_debug};
+  bool help {default_help};
+};
+
+
+bool parse_opts(int argc,
+                char *argv[],
+                Options& opts) {
 
   std::set<std::string_view> seen;
   std::vector<std::string_view> args;
@@ -128,80 +142,96 @@ bool parse_opts(int argc, char *argv[], size_t &n_actions,
         if (seen.count("actions")) {
           throw std::invalid_argument("Duplicate program options");
         }
-        n_actions = std::stoi((it + 1)->data());
-        fmt::print("Set number of actions to {0}\n", n_actions);
+        opts.n_actions = std::stoi((it + 1)->data());
+        fmt::print("Set number of actions to {0}\n", opts.n_actions);
         seen.insert("actions");
         break; // number of actions
       case 'c':
         if (seen.count("exploration")) {
           throw std::invalid_argument("Duplicate program options");
         }
-        exploration_constant = std::stod((it + 1)->data());
-        fmt::print("Set exploration_constant to {0}\n", exploration_constant);
+        opts.exploration_constant = std::stod((it + 1)->data());
+        fmt::print("Set exploration_constant to {0}\n", opts.exploration_constant);
+        seen.insert("exploration");
         break; // epsilon
       case 's':
         if (seen.count("steps")) {
           throw std::invalid_argument("Duplicate program options");
         }
-        n_steps = std::stoi((it + 1)->data());
-        fmt::print("Set number of steps to {0}\n", n_steps);
+        opts.n_steps = std::stoi((it + 1)->data());
+        fmt::print("Set number of steps to {0}\n", opts.n_steps);
+        seen.insert("steps");
         break; // number of steps
+      case 'j':
+        if (seen.count("stepsize")) {
+          throw std::invalid_argument("Duplicate program options");
+        }
+        opts.stepsize = std::stoi((it + 1)->data());
+        fmt::print("Set step size to {0}\n", opts.stepsize);
+        seen.insert("stepsize");
+        break; // step size
       case 'n':
         if (seen.count("episodes")) {
           throw std::invalid_argument("Duplicate program options");
         }
-        n_episodes = std::stoi((it + 1)->data());
-        fmt::print("Set number of episodes to {0}\n", n_episodes);
+        opts.n_episodes = std::stoi((it + 1)->data());
+        fmt::print("Set number of episodes to {0}\n", opts.n_episodes);
+        seen.insert("episodes");
         break; // number of episodes
       case 'd':
         if (not seen.insert("debug").second) {
           throw std::invalid_argument("Duplicate program options");
         }
-        debug = true;
-        fmt::print("Set debug flag on\n", n_episodes);
+        opts.debug = true;
+        fmt::print("Set debug flag {0}\n", opts.debug? "on": "off");
         break; // debug
       case 'h':
         if (not seen.insert("help").second) {
           throw std::invalid_argument("Duplicate program options");
         }
-        help = true;
-        fmt::print("Set help flag on\n", n_episodes);
+        opts.help = true;
+        fmt::print("Set help flag {0}\n", opts.help? "on": "off");
         break; // number of episodes
       case '-': {
         std::string_view opt = it->substr(2);
         if (opt == "debug") {
           if (not seen.insert("debug").second)
             throw std::invalid_argument("Duplicate program options");
-          debug = true;
+          opts.debug = true;
         } else if (opt == "help") {
           if (not seen.insert("help").second)
             throw std::invalid_argument("Duplicate program options");
-          help = true;
+          opts.help = true;
         } else if (opt == "actions") {
           if (not seen.insert("actions").second)
             throw std::invalid_argument("Duplicate program options");
-          n_actions = std::stoi((it + 1)->data());
-          fmt::print("Set number of actions to {0}\n", n_actions);
+          opts.n_actions = std::stoi((it + 1)->data());
+          fmt::print("Set number of actions to {0}\n", opts.n_actions);
         } else if (opt == "exploration") {
           bool err = not seen.insert("exploration").second;
           if (err) {
             throw std::invalid_argument("Duplicate program options");
           }
-          exploration_constant = std::stod((it + 1)->data());
-          fmt::print("Set exploration_constant to {0}\n", exploration_constant);
+          opts.exploration_constant = std::stod((it + 1)->data());
+          fmt::print("Set exploration_constant to {0}\n", opts.exploration_constant);
         } else if (opt == "steps") {
           if (seen.count("steps")) {
             throw std::invalid_argument("Duplicate program options");
           }
-          n_steps = std::stoi((it + 1)->data());
-          fmt::print("Set number of steps to {0}\n", n_steps);
+          opts.n_steps = std::stoi((it + 1)->data());
+          fmt::print("Set number of steps to {0}\n", opts.n_steps);
           seen.insert("steps");
+        } else if (opt == "stepsize") {
+          if (not seen.insert("stepsize").second)
+            throw std::invalid_argument("Duplicate program options");
+          opts.stepsize = std::stoi((it + 1)->data());
+          fmt::print("Set step size to {0}\n", opts.stepsize);
         } else if (opt == "episodes") {
           if (seen.count("episodes")) {
             throw std::invalid_argument("Duplicate program options");
           }
-          n_episodes = std::stoi((it + 1)->data());
-          fmt::print("Set number of episodes to {0}\n", n_episodes);
+          opts.n_episodes = std::stoi((it + 1)->data());
+          fmt::print("Set number of episodes to {0}\n", opts.n_episodes);
           seen.insert("episodes");
         }
       } break;
@@ -220,11 +250,11 @@ bool parse_opts(int argc, char *argv[], size_t &n_actions,
 }
 
 std::string make_log_fn(std::string_view policy_name, int n_actions,
-                        int n_episodes, int n_steps, double exp_cst) {
+                        int n_episodes, int n_steps, int stepsize, double exp_cst) {
   int exp_cst_100 = static_cast<int>(100.0 * exp_cst);
   std::stringstream ss;
   ss << log_dir << policy_name << '_' << n_actions << '_' << n_episodes << '_'
-     << n_steps << '_' << exp_cst_100 << ".json";
+     << n_steps << '_' << stepsize << '_' << exp_cst_100 << ".json";
   return ss.str();
 }
 
@@ -234,11 +264,12 @@ bool json_log(nlohmann::json &&j) {
   std::string policy_name = json["policy"].get<json::string_t>();
   std::uint64_t n_actions = json["n_actions"].get<json::number_unsigned_t>();
   std::uint64_t n_steps = json["n_steps"].get<json::number_unsigned_t>();
+  std::uint64_t stepsize = json["stepsize"].get<json::number_unsigned_t>();
   std::uint64_t n_episodes = json["n_episodes"].get<json::number_unsigned_t>();
   double exp_cst = json["exploration_constant"].get<json::number_float_t>();
 
   std::string fn =
-      make_log_fn(policy_name, n_actions, n_episodes, n_steps, exp_cst);
+      make_log_fn(policy_name, n_actions, n_episodes, n_steps, stepsize, exp_cst);
   std::ofstream ofs{fn};
   if (not ofs) {
     fmt::print("WARNING: Unable to open log file: {0}\n", fn);
@@ -258,31 +289,27 @@ bool json_log(nlohmann::json &&j) {
 int main(int argc, char *argv[]) {
   using namespace nlohmann;
 
-  size_t n_actions = default_n_actions;
-  double exploration_constant = default_exploration_constant;
-  size_t n_steps = default_n_steps;
-  size_t n_episodes = default_n_episodes;
-  bool debug = default_debug;
-  bool help = default_help;
+  Options opts;
 
-  parse_opts(argc, argv, n_actions, exploration_constant, n_steps, n_episodes,
-             debug, help);
+  parse_opts(argc,
+             argv,
+             opts);
 
-  if (help) {
+  if (opts.help) {
     print_usage(argv[0]);
     return EXIT_SUCCESS;
   }
 
-  NArmedBandit bandit{n_actions};
-  Agent<Policy_UCB> agent(bandit, Policy_UCB{exploration_constant});
+  NArmedBandit bandit{opts.n_actions};
+  Agent<Policy_UCB> agent(bandit, Policy_UCB{opts.exploration_constant});
 
   // Cumulative rewards for each step.
   std::vector<double> rewards;
-  rewards.resize(n_steps, 0.0);
+  rewards.resize(opts.n_steps, 0.0);
 
   // Cumulative losses for each step.
   std::vector<double> losses;
-  losses.resize(n_steps, 0.0);
+  losses.resize(opts.n_steps, 0.0);
 
   Action action{};
   double reward{};
@@ -297,18 +324,27 @@ int main(int argc, char *argv[]) {
                     return bandit.expectation(Action{static_cast<size_t>(n++)});
                   });
 
-  // Start} the training process
-  for (size_t n = 0; n < n_episodes; ++n) {
+  // Start the training process
+  for (size_t n = 0; n < opts.n_episodes; ++n) {
 
     // Sample the environment for the designated number of steps.
-    for (size_t s = 0; s < n_steps; ++s) {
-      std::tie(action, reward) = agent.sample();
+    for (size_t s = 0; s < opts.n_steps; ++s) {
+
+      double step_reward = 0.0;
+      double step_loss = 0.0;
+
+      for (size_t i = 0; i < opts.stepsize; ++i) {
+        std::tie(action, reward) = agent.sample();
+
+        step_reward += reward;
+        step_loss += loss(bandit, action);
+      }
 
       // We collect rewards and losses for each step.
-      rewards[s] += reward;
-      losses[s] += loss(bandit, action);
+      rewards[s] += step_reward / opts.stepsize;
+      losses[s] += step_loss / opts.stepsize;
 
-      if (debug) {
+      if (opts.debug) {
         action_visits.clear();
         action_values.clear();
         action_pvalues.clear();
@@ -333,18 +369,19 @@ int main(int argc, char *argv[]) {
   }
 
   // Make each entry equal to the average over the episodes
-  for (size_t s = 0; s < n_steps; ++s) {
-    rewards[s] /= n_episodes;
-    losses[s] /= n_episodes;
+  for (size_t s = 0; s < opts.n_steps; ++s) {
+    rewards[s] /= opts.n_episodes;
+    losses[s] /= opts.n_episodes;
   }
 
   // Log results
   json j;
   j["policy"] = "ucb";
-  j["n_actions"] = n_actions;
-  j["exploration_constant"] = exploration_constant;
-  j["n_steps"] = n_steps;
-  j["n_episodes"] = n_episodes;
+  j["n_actions"] = opts.n_actions;
+  j["exploration_constant"] = opts.exploration_constant;
+  j["n_steps"] = opts.n_steps;
+  j["stepsize"] = opts.stepsize;
+  j["n_episodes"] = opts.n_episodes;
   j["rewards"] = json::array({});
   for (auto r : rewards) {
     j["rewards"].push_back(r);

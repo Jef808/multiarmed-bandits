@@ -17,19 +17,35 @@
 constexpr double default_epsilon = 0.1;
 constexpr size_t default_n_actions = 10;
 constexpr size_t default_n_steps = 1000;
+constexpr size_t default_stepsize = 1;
 constexpr size_t default_n_episodes = 2000;
 
 const std::string log_dir = "/home/jfa/projects/ai/logs/multiarmed_bandits/";
 
 using ExtAction = ExtActionT<Action>;
 
+struct Options {
+  size_t n_actions{ default_n_actions };
+  double epsilon {default_epsilon};
+  size_t stepsize {default_stepsize};
+  size_t n_steps {default_n_steps};
+  size_t n_episodes {default_n_episodes};
+  // bool debug {default_debug};
+  // bool help {default_help};
+};
+
 inline double loss(const NArmedBandit &bandit, const Action &chosen_action) {
   return bandit.expectation(bandit.best_action()) -
          bandit.expectation(chosen_action);
 }
 
-bool parse_opts(int argc, char *argv[], size_t &n_actions, double &epsilon,
-                size_t &n_steps, size_t &n_episodes) {
+bool parse_opts(int argc, char *argv[], Options& opts) {
+
+  auto& n_actions = opts.n_actions;
+  auto& epsilon = opts.epsilon;
+  auto& stepsize = opts.stepsize;
+  auto& n_steps = opts.n_steps;
+  auto& n_episodes = opts.n_episodes;
 
   std::vector<std::string_view> args;
   for (auto i = 0; i < argc; ++i) {
@@ -55,6 +71,10 @@ bool parse_opts(int argc, char *argv[], size_t &n_actions, double &epsilon,
         n_steps = std::stoi((it + 1)->data());
         fmt::print("Set number of steps to {0}\n", n_steps);
         break; // number of steps
+      case 'j':
+        stepsize = std::stoi((it + 1)->data());
+        fmt::print("Set step size to {0}\n", stepsize);
+        break; // step size
       case 'n':
         n_episodes = std::stoi((it + 1)->data());
         fmt::print("Set number of episodes to {0}\n", n_episodes);
@@ -74,25 +94,26 @@ bool parse_opts(int argc, char *argv[], size_t &n_actions, double &epsilon,
   return true;
 }
 
-std::string make_log_fn(std::string_view policy_name, int n_actions,
-                        int n_episodes, int n_steps, double epsilon) {
-  int epsilon_100 = static_cast<int>(100.0 * epsilon);
+std::string make_log_fn(std::string_view policy_name, const Options& opts) {
+  int epsilon_100 = static_cast<int>(100.0 * opts.epsilon);
   std::stringstream ss;
-  ss << log_dir << policy_name << '_' << n_actions << '_' << n_episodes << '_'
-     << n_steps << '_' << epsilon_100 << ".json";
+  ss << log_dir << policy_name << '_' << opts.n_actions << '_' << opts.n_episodes << '_'
+     << opts.n_steps << '_' << opts.stepsize << '_' << epsilon_100 << ".json";
   return ss.str();
 }
 
 void json_log(nlohmann::json &&j) {
   using namespace nlohmann;
   json json = j;
+  Options opts{};
   std::string policy_name = json["policy"].get<json::string_t>();
-  std::uint64_t n_actions = json["n_actions"].get<json::number_unsigned_t>();
-  std::uint64_t n_steps = json["n_steps"].get<json::number_unsigned_t>();
-  std::uint64_t n_episodes = json["n_episodes"].get<json::number_unsigned_t>();
-  double epsilon = json["epsilon"].get<json::number_float_t>();
+  opts.n_actions = json["n_actions"].get<json::number_unsigned_t>();
+  opts.n_steps = json["n_steps"].get<json::number_unsigned_t>();
+  opts.stepsize = json["stepsize"].get<json::number_unsigned_t>();
+  opts.n_episodes = json["n_episodes"].get<json::number_unsigned_t>();
+  opts.epsilon = json["epsilon"].get<json::number_float_t>();
 
-  std::string fn = make_log_fn(policy_name, n_actions, n_episodes, n_steps, epsilon);
+  std::string fn = make_log_fn(policy_name, opts);
   std::ofstream ofs{ fn };
   if (not ofs) {
     fmt::print("WARNING: Unable to open log file: {0}\n", fn);
@@ -105,12 +126,15 @@ void json_log(nlohmann::json &&j) {
 int main(int argc, char *argv[]) {
   using namespace nlohmann;
 
-  size_t n_actions = default_n_actions;
-  double epsilon = default_epsilon;
-  size_t n_steps = default_n_steps;
-  size_t n_episodes = default_n_episodes;
+  Options opts;
 
-  parse_opts(argc, argv, n_actions, epsilon, n_steps, n_episodes);
+  size_t& n_actions = opts.n_actions = default_n_actions;
+  double& epsilon = opts.epsilon = default_epsilon;
+  size_t& stepsize = opts.stepsize = default_stepsize;
+  size_t& n_steps = opts.n_steps = default_n_steps;
+  size_t& n_episodes = opts.n_episodes = default_n_episodes;
+
+  parse_opts(argc, argv, opts);
 
   NArmedBandit bandit{n_actions};
   Agent< Policy_Greedy > agent(bandit, Policy_Greedy{epsilon});
@@ -124,9 +148,6 @@ int main(int argc, char *argv[]) {
   std::vector<double> losses;
   losses.resize(n_steps, 0.0);
 
-  Action action{};
-  double reward{};
-
   // int total_visits;
   // std::vector<int> action_visits;
   // std::vector<double> action_values;
@@ -137,16 +158,28 @@ int main(int argc, char *argv[]) {
                     return bandit.expectation(Action{static_cast<size_t>(n++)});
                   });
 
+  Action action{};
+  double reward{};
+
   // Start the training process
   for (size_t n = 0; n < n_episodes; ++n) {
 
     // Sample the environment for the designated number of steps.
     for (size_t s = 0; s < n_steps; ++s) {
-      std::tie(action, reward) = agent.sample();
+
+      double step_reward = 0.0;
+      double step_loss = 0.0;
+
+      for (size_t i = 0; i < stepsize; ++i) {
+        std::tie(action, reward) = agent.sample();
+
+        step_reward += reward;
+        step_loss += loss(bandit, action);
+      }
 
       // We collect rewards and losses for each step.
-      rewards[s] += reward;
-      losses[s] += loss(bandit, action);
+      rewards[s] += step_reward / stepsize;
+      losses[s] += step_loss / stepsize;
     }
 
     // Reset the agent's memory in preparation for the next round.
@@ -165,6 +198,7 @@ int main(int argc, char *argv[]) {
   j["n_actions"] = n_actions;
   j["epsilon"] = epsilon;
   j["n_steps"] = n_steps;
+  j["stepsize"] = stepsize;
   j["n_episodes"] = n_episodes;
   j["rewards"] = json::array({});
   for (auto r : rewards) {
