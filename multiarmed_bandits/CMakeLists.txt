@@ -13,15 +13,22 @@ target_link_libraries(MAB_epsilon_greedy PRIVATE
   MAB_agents
   fmt::fmt)
 
-add_executable(MAB_ucb
-  cmdline_helper.h
-  test_ucb.cpp
-  # cmdline_helper.cpp
+add_library(utils
+  po_helper.h
+  po_helper.cpp
+  jsonlog.h
+  jsonlog.cpp)
+target_link_libraries(utils PUBLIC
+  ${Boost_LIBRARIES})
+
+add_executable(MAB_ucb_po
+  test_ucb_po.cpp
   )
-target_link_libraries(MAB_ucb PRIVATE
+target_link_libraries(MAB_ucb_po PRIVATE
   MAB
   MAB_agents
-  fmt::fmt)
+  fmt::fmt
+  utils)
 
 
 # target_include_directories(MAB_epsilon_greedy PRIVATE

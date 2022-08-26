@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED 17)
 
 find_package(fmt REQUIRED)
-include(tensorboard_logger)
+find_package(Boost COMPONENTS program_options system REQUIRED)
 
 add_subdirectory(multiarmed_bandits)
 add_subdirectory(qlearning)
