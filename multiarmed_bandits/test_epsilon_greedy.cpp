@@ -6,6 +6,7 @@
 #include <array>
 #include <cassert>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <string_view>

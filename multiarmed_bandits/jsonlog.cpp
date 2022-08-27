@@ -3,17 +3,16 @@
 
 #include <nlohmann/json.hpp>
 
-#include <stdexcept>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace jsonlog {
 
-
 void log(std::string_view name, std::vector<double> &&rewards,
-         std::vector<double> &&losses) {
+         std::vector<double> &&losses, std::string_view output_file) {
   using namespace nlohmann;
   using parseopts::vm;
 
@@ -37,18 +36,21 @@ void log(std::string_view name, std::vector<double> &&rewards,
     j["losses"].push_back(l);
   }
 
-  std::ofstream ofs{ vm["output-file"].as<std::string>() };
-  if (not ofs) {
-    std::cerr << vm["output-file"].as<std::string>();
-    throw std::runtime_error("Unable to open output file");
-  }
-  try {
-    ofs << j.dump() << std::endl;
-    std::cout << "Wrote output to log file " << vm["output-file"].as<std::string>() << std::endl;
-  } catch (std::exception &e) {
-    std::cerr << e.what();
-    throw std::runtime_error("Error while dumping json object to output file");
-  }
+  std::ofstream ofs{output_file.data()};
+
+  ofs << j.dump() << std::endl;
+  // if (not ofs) {
+  //   auto msg = "Unable to open output file: " + std::string(output_file);
+  //   throw std::runtime_error(msg);
+  // }
+  // try {
+
+  // } catch (std::exception &e) {
+  //   auto msg = "Error while dumping json to file " + std::string(output_file)
+  //   +
+  //              ": " + e.what();
+  //   throw std::runtime_error(msg);
+  // }
 }
 
 } // namespace jsonlog

@@ -1,3 +1,10 @@
+project(multiarmed_bandits)
+
+# Expose DEFAULT_CONFIG_FILEPATH string
+set_property(DIRECTORY
+  APPEND PROPERTY
+  COMPILE_DEFINITIONS "DEFAULT_CONFIG_FILEPATH=\"${PROJECT_SOURCE_DIR}/config.cfg\"")
+
 add_library(MAB
   multiarmed_bandits.h
   multiarmed_bandits.cpp)
@@ -29,6 +36,8 @@ target_link_libraries(MAB_ucb_po PRIVATE
   MAB_agents
   fmt::fmt
   utils)
+
+
 
 
 # target_include_directories(MAB_epsilon_greedy PRIVATE

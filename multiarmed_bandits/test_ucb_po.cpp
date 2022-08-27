@@ -1,8 +1,8 @@
 #include "agent.h"
-#include "multiarmed_bandits.h"
-#include "policies.h"
-#include "po_helper.h"
 #include "jsonlog.h"
+#include "multiarmed_bandits.h"
+#include "po_helper.h"
+#include "policies.h"
 
 #include <algorithm>
 #include <cassert>
@@ -14,13 +14,11 @@
 
 #include <fmt/core.h>
 
-
-template< typename T >
-std::ostream& operator<<(std::ostream& out, const std::vector<T>& v) {
+template <typename T>
+std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
   std::copy(v.begin(), v.end(), std::ostream_iterator<T>(out, " "));
   return out;
 }
-
 
 inline double loss(NArmedBandit &bandit, const Action &action) {
   double best_val = bandit.expectation(bandit.best_action());
@@ -35,25 +33,35 @@ int main(int argc, char *argv[]) {
 
   parseopts::parse(argc, argv);
 
-  if (vm.count("output-file")) {
-    std::cout << "Ouput: "
-              << vm["output-file"].as<std::vector< std::string >>() << "\n";
-  }
+  auto output_file = [as_default = IN_VIEWER_DATA_DIR "ucb_out.json"] {
+    std::vector<std::string> ret;
+    if (vm.count("output-file")) {
+      ret = vm["output-file"].as<std::vector<std::string>>();
+    } else {
+      ret.push_back(as_default);
+    }
+    return ret;
+  }();
+
+  // The variables "steps" and "stepsize" are assigned repeatedly
+  // during training process, so we perform their value extraction
+  // outside of the loop.
+  size_t steps = vm["steps"].as<int>();
+  size_t stepsize = vm["stepsize"].as<int>();
 
   NArmedBandit bandit{(size_t)vm["actions"].as<int>()};
   Agent<Policy_UCB> agent(bandit, Policy_UCB{vm["exploration"].as<double>()});
 
   // Cumulative rewards for each step.
   std::vector<double> rewards;
-  rewards.resize((size_t)vm["steps"].as<int>(), 0.0);
+  rewards.resize(steps, 0.0);
 
   // Cumulative losses for each step.
   std::vector<double> losses;
-  losses.resize((size_t)vm["steps"].as<int>(), 0.0);
+  losses.resize(steps, 0.0);
 
   Action action{};
   double reward{};
-
 
   int total_visits;
   std::vector<int> action_visits;
@@ -69,12 +77,12 @@ int main(int argc, char *argv[]) {
   for (size_t n = 0; n < vm["episodes"].as<int>(); ++n) {
 
     // Sample the environment for the designated number of steps.
-    for (size_t s = 0; s < vm["steps"].as<int>(); ++s) {
+    for (size_t s = 0; s < steps; ++s) {
 
       double step_reward = 0.0;
       double step_loss = 0.0;
 
-      for (size_t i = 0; i < vm["stepsize"].as<int>(); ++i) {
+      for (size_t i = 0; i < stepsize; ++i) {
         std::tie(action, reward) = agent.sample();
 
         step_reward += reward;
@@ -82,12 +90,11 @@ int main(int argc, char *argv[]) {
       }
 
       // We collect rewards and losses for each step.
-      rewards[s] += step_reward / vm["stepsize"].as<int>();
-      losses[s] += step_loss / vm["stepsize"].as<int>();
+      rewards[s] += step_reward / stepsize;
+      losses[s] += step_loss / stepsize;
 
       // If debugging
-      if (vm["debug"].as<bool>()) {
-
+      if (vm.count("debug")) {
         action_visits.clear();
         action_values.clear();
         action_pvalues.clear();
@@ -95,8 +102,7 @@ int main(int argc, char *argv[]) {
         agent.get_action_values(action_values);
         agent.get_action_policy_values(action_pvalues);
 
-        int a = 0;
-        fmt::print("Step {0}\n", s);
+        fmt::print("Step {}\n", s);
         for (size_t a = 0; a < bandit.number_of_actions(); ++a) {
           fmt::print("Action {0}: Visits = {1}, Value = {2}, PolicyValue = "
                      "{3}, TrueValue = {4}\n",
@@ -112,13 +118,18 @@ int main(int argc, char *argv[]) {
   }
 
   // Make each entry equal to the average over the episodes
-  for (size_t s = 0; s < vm["steps"].as<int>(); ++s) {
+  for (size_t s = 0; s < steps; ++s) {
     rewards[s] /= vm["episodes"].as<int>();
     losses[s] /= vm["episodes"].as<int>();
   }
 
   // Log results
-  jsonlog::log("ucb", std::move(rewards), std::move(losses));
+  try {
+    jsonlog::log("ucb", std::move(rewards), std::move(losses), output_file[0]);
+  } catch (std::exception &e) {
+    std::cerr << "Failed to dump the json output to file " << output_file[0]
+              << "\n";
+  }
 
   return EXIT_SUCCESS;
 }

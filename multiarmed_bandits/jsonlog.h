@@ -1,12 +1,12 @@
-#ifndef __JSONLOG_H
-#define __JSONLOG_H
+#ifndef JSONLOG_H_
+#define JSONLOG_H_
 
 #include <string_view>
 #include <vector>
 
 namespace jsonlog {
-    void log(std::string_view name, std::vector<double> &&rewards,
-             std::vector<double> &&losses);
+void log(std::string_view name, std::vector<double> &&rewards,
+         std::vector<double> &&losses, std::string_view output_file);
 }
 
-#endif
+#endif // JSONLOG_H_
