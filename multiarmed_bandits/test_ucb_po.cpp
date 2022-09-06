@@ -3,6 +3,7 @@
 #include "multiarmed_bandits.h"
 #include "po_helper.h"
 #include "policies.h"
+#include "statistics.h"
 
 #include <algorithm>
 #include <cassert>
@@ -25,13 +26,20 @@ inline double loss(NArmedBandit &bandit, const Action &action) {
   return std::max(0.0, best_val - bandit.expectation(action));
 }
 
+inline void divide_by(double d, std::vector<double> &series) {
+  std::transform(series.begin(), series.end(), series.begin(),
+                 [d](double v) { return std::divides<>{}(v, d); });
+};
+
 ////////////////////////////////////////////////////////////
 // BEGINNING OF MAIN METHOD
 ////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
   using parseopts::vm;
 
-  parseopts::parse(argc, argv);
+  if (not parseopts::parse(argc, argv)) {
+    return EXIT_SUCCESS;
+  }
 
   auto output_file = [as_default = IN_VIEWER_DATA_DIR "ucb_out.json"] {
     std::vector<std::string> ret;
@@ -43,38 +51,54 @@ int main(int argc, char *argv[]) {
     return ret;
   }();
 
-  // The variables "steps" and "stepsize" are assigned repeatedly
-  // during training process, so we perform their value extraction
+  // The variables "actions", "episodes", "steps" and "stepsize" are assigned
+  // repeatedly during training process, so we perform their value extraction
   // outside of the loop.
+  size_t actions = vm["actions"].as<int>();
   size_t steps = vm["steps"].as<int>();
   size_t stepsize = vm["stepsize"].as<int>();
+  size_t episodes = vm["episodes"].as<int>();
 
-  NArmedBandit bandit{(size_t)vm["actions"].as<int>()};
+  // Construct the model and agent.
+  NArmedBandit bandit{actions};
   Agent<Policy_UCB> agent(bandit, Policy_UCB{vm["exploration"].as<double>()});
 
-  // Cumulative rewards for each step.
-  std::vector<double> rewards;
-  rewards.resize(steps, 0.0);
+  stats::Store stats_store;
 
-  // Cumulative losses for each step.
-  std::vector<double> losses;
+  // Declare the learning stats to log.
+  auto &rewards = stats_store.add<stats::Type::Series>("rewards");
+  auto &losses = stats_store.add<stats::Type::Series>("losses");
+
+  // Initialize the buffers
+  rewards.resize(steps, 0.0);
   losses.resize(steps, 0.0);
 
+  auto &action_visits =
+      stats_store.add<stats::Type::WideSeries>("action_visits");
+  auto &action_values =
+      stats_store.add<stats::Type::WideSeries>("action_values");
+  auto &action_pvalues =
+      stats_store.add<stats::Type::WideSeries>("action_pvalues");
+
+  // Initialize the buffers.
+  action_visits.resize(steps, std::vector<double>(actions, 0.0));
+  action_values.resize(steps, std::vector<double>(actions, 0.0));
+  action_pvalues.resize(steps, std::vector<double>(actions, 0.0));
+
+  // Real expected value for each action
+  auto &action_qvalues = stats_store.add<stats::Type::Series>("action_qvalues");
+
+  // Store each action's real expected value.
+  std::generate_n(
+      std::back_inserter(action_qvalues), bandit.number_of_actions(),
+      [&bandit, n = 0]() mutable { return bandit.expectation(n++); });
+
+  // Buffer to receive agent samples.
   Action action{};
   double reward{};
 
-  int total_visits;
-  std::vector<int> action_visits;
-  std::vector<double> action_values;
-  std::vector<double> action_pvalues;
-  std::vector<double> action_qvalues;
-  std::generate_n(std::back_inserter(action_qvalues),
-                  bandit.number_of_actions(), [&bandit, n = 0]() mutable {
-                    return bandit.expectation(Action{static_cast<size_t>(n++)});
-                  });
-
   // Start the training process
-  for (size_t n = 0; n < vm["episodes"].as<int>(); ++n) {
+  for (size_t n = 0; n < episodes; ++n) {
 
     // Sample the environment for the designated number of steps.
     for (size_t s = 0; s < steps; ++s) {
@@ -93,23 +117,26 @@ int main(int argc, char *argv[]) {
       rewards[s] += step_reward / stepsize;
       losses[s] += step_loss / stepsize;
 
-      // If debugging
-      if (vm.count("debug")) {
-        action_visits.clear();
-        action_values.clear();
-        action_pvalues.clear();
-        agent.get_action_visits(action_visits);
-        agent.get_action_values(action_values);
-        agent.get_action_policy_values(action_pvalues);
-
-        fmt::print("Step {}\n", s);
-        for (size_t a = 0; a < bandit.number_of_actions(); ++a) {
-          fmt::print("Action {0}: Visits = {1}, Value = {2}, PolicyValue = "
-                     "{3}, TrueValue = {4}\n",
-                     a, action_visits[a], action_values[a], action_pvalues[a],
-                     action_qvalues[a]);
-        }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+      // We collect individual actions statistics for each step.
+      {
+        // Update action visits statistics
+        const std::vector<double> &visits = agent.get_action_visits();
+        std::transform(
+            visits.begin(), visits.end(), action_visits[s].begin(),
+            action_visits[s].begin(),
+            [](auto new_val, auto old_val) { return new_val + old_val; });
+        // Update action visits statistics
+        const std::vector<double> &values = agent.get_action_values();
+        std::transform(
+            values.begin(), values.end(), action_values[s].begin(),
+            action_values[s].begin(),
+            [](auto new_val, auto old_val) { return new_val + old_val; });
+        // Update action visits statistics
+        const std::vector<double> &pvalues = agent.get_action_policy_values();
+        std::transform(
+            pvalues.begin(), pvalues.end(), action_pvalues[s].begin(),
+            action_pvalues[s].begin(),
+            [](auto new_val, auto old_val) { return new_val + old_val; });
       }
     }
 
@@ -117,15 +144,20 @@ int main(int argc, char *argv[]) {
     agent.reset();
   }
 
-  // Make each entry equal to the average over the episodes
-  for (size_t s = 0; s < steps; ++s) {
-    rewards[s] /= vm["episodes"].as<int>();
-    losses[s] /= vm["episodes"].as<int>();
-  }
+  // Make all statistics average over episodes
+  divide_by(episodes, rewards);
+  divide_by(episodes, losses);
+
+  std::for_each(action_visits.begin(), action_visits.end(),
+                [episodes](auto &visits) { divide_by(episodes, visits); });
+  std::for_each(action_values.begin(), action_values.end(),
+                [episodes](auto &values) { divide_by(episodes, values); });
+  std::for_each(action_pvalues.begin(), action_pvalues.end(),
+                [episodes](auto &pvalues) { divide_by(episodes, pvalues); });
 
   // Log results
   try {
-    jsonlog::log("ucb", std::move(rewards), std::move(losses), output_file[0]);
+    jsonlog::log("ucb", stats_store, output_file[0]);
   } catch (std::exception &e) {
     std::cerr << "Failed to dump the json output to file " << output_file[0]
               << "\n";
