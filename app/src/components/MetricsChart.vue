@@ -1,6 +1,5 @@
 <template>
   <div>
-    <p>Two way selection binding. Use dropdown or hover a series line.</p>
     <label>
       Selected:
       <select v-model="selected" @change="selectSeries">
@@ -27,17 +26,16 @@ import { assert, smoothen } from "./../js/utils";
 const chartConfig = () => {
   return {
     debug: true,
-    type: "spline",
-    title_label_text: "My Chart",
-    defaultTooltip_enabled: false,
+    type: "line",
+    title_label_text: "<b>Multi-armed bandits</b>",
+    defaultTooltip_enabled: true,
     yAxis: {
-      // defaultTick_label_text: "Rewards",
-      scale_range: [-1, 3],
+      label: { text: "<b>Rewards</b>" },
+      scale_range: [-0.5, 2.5],
     },
-    // xAxis: {
-    //   scale_type: "time",
-    //   formatString: "yyyy",
-    // },
+    xAxis: {
+      label: { text: "<b>Steps</b>" },
+    },
     defaultPoint: {
       marker: {
         visible: false,
@@ -50,12 +48,46 @@ const chartConfig = () => {
       },
       focusGlow_width: 0,
     },
-    legend_visible: true,
+    // legend_visible: true,
+    legend: {
+      title: "UCB by exploration constant",
+      shadow: false,
+      template: "%name %icon %value",
+      header: "<b>File</b>,,<b>Exploration Cst</b>",
+      position: "right top",
+      boxVisible: true,
+      corners: "round",
+      radius: 5,
+      margin_left: 30,
+      outline: { color: "#a5c6ee", width: 3 },
+      defaultEntry: {
+        padding: 4,
+        style: {
+          // color: "currentColor",
+          fontSize: "10pt",
+          fontStyle: "italic",
+          fontFamily: "Arial",
+          fontWeight: "normal",
+        },
+        // states: {
+        //   hover_style: { color: "#FF5254" },
+        //   hidden_style: { color: "#c2bec1" },
+        // },
+      },
+    },
     defaultSeries: {
       // Default line is translucent and desaturated
       line: {
         opacity: 0.2,
         color: "desaturate",
+      },
+      events: {
+        events_click: function () {
+          const series = this;
+          me.selected = series.options("name");
+          me.selectSeries();
+          return false;
+        },
       },
       states: {
         select: {
@@ -69,6 +101,14 @@ const chartConfig = () => {
         // Series hover and mute states are not necessary
         hover: { enabled: false },
         mute: { enabled: false },
+      },
+      legendEntry: {
+        icon: {
+          visible: true,
+          outerShape: "square",
+          width: 25,
+          fill: "currentColor",
+        },
       },
       line_width: 1,
     },
@@ -100,7 +140,7 @@ export default {
         defaultPoint: {
           events: {
             mouseOver: function () {
-              var point = this;
+              let point = this;
               me.selected = point.series.options("name");
               me.selectSeries();
               return false;
@@ -117,15 +157,16 @@ export default {
     return {
       series: [
         {
-          name: "",
+          name: "Name",
           points: [],
+          legendEntry: { visible: false },
         },
       ],
       seriesData: [],
       dataLoaded: false,
       smoothRatio: 0.1,
       chartOptions: chartConfig(),
-      selected: "",
+      selected: "Name",
     };
   },
   methods: {
@@ -143,8 +184,13 @@ export default {
       return this.$refs.myChart.instance;
     },
     makeFullSeries: function (jsonData, name) {
+      const exp_cst = jsonData.exploration_constant.toFixed(2);
       return {
         name: jsonData.name,
+        attributes: {
+          exploration: exp_cst,
+        },
+        legendEntry: { value: "%exploration" },
         points: jsonData[name].map((val, ind) => {
           return { x: ind, y: val };
         }),
@@ -152,7 +198,7 @@ export default {
     },
     makeSmoothSeries: function (series) {
       return {
-        name: series.name,
+        ...series,
         points: smoothen(series.points, this.smoothRatio),
       };
     },
