@@ -1,13 +1,29 @@
 <template>
   <div>
-    <label>
-      Selected:
-      <select v-model="selected" @change="selectSeries">
-        <option v-for="ser in series" :value="ser.name" :key="ser.name">
-          {{ ser.name }}
-        </option>
-      </select>
-    </label>
+    <div>
+      <label>
+        Selected:
+        <select v-model="selected" @change="selectSeries">
+          <option v-for="ser in series" :value="ser.name" :key="ser.name">
+            {{ ser.name }}
+          </option>
+        </select>
+      </label>
+    </div>
+    <div>
+      <label>
+        Metric:
+        <select v-model="currentMetric" @change="selectMetric">
+          <option
+            v-for="metric in metrics"
+            :value="metric.name"
+            :key="metric.name"
+          >
+            {{ metric.name }}
+          </option>
+        </select>
+      </label>
+    </div>
     <JSCharting
       ref="myChart"
       v-if="dataLoaded"
@@ -30,7 +46,7 @@ const chartConfig = () => {
     title_label_text: "<b>Multi-armed bandits</b>",
     defaultTooltip_enabled: true,
     yAxis: {
-      label: { text: "<b>Rewards</b>" },
+      label: { text: "<b>Metric Value</b>" },
       scale_range: [-0.5, 2.5],
     },
     xAxis: {
@@ -44,7 +60,7 @@ const chartConfig = () => {
       states: {
         // Point hover and mute states are not necessary
         hover: { enabled: false },
-        mute: { enabled: false },
+        mute: { enabled: true },
       },
       focusGlow_width: 0,
     },
@@ -64,22 +80,18 @@ const chartConfig = () => {
         padding: 4,
         style: {
           // color: "currentColor",
-          fontSize: "10pt",
-          fontStyle: "italic",
+          fontSize: "16pt",
+          // fontStyle: "italic",
           fontFamily: "Arial",
           fontWeight: "normal",
         },
-        // states: {
-        //   hover_style: { color: "#FF5254" },
-        //   hidden_style: { color: "#c2bec1" },
-        // },
       },
     },
     defaultSeries: {
-      // Default line is translucent and desaturated
       line: {
-        opacity: 0.2,
-        color: "desaturate",
+        opacity: 0.7,
+        color: "lighten",
+        width: 2,
       },
       events: {
         events_click: function () {
@@ -94,23 +106,24 @@ const chartConfig = () => {
           // Selected line is solid, and thicker.
           line: {
             opacity: 1,
-            color: "currentColor",
-            width: 3,
+            color: "darken",
+            width: 2,
           },
+        },
+        mute: {
+          opacity: 0.3,
+          color: "desaturate",
+          width: 1,
         },
         // Series hover and mute states are not necessary
         hover: { enabled: false },
-        mute: { enabled: false },
       },
-      legendEntry: {
-        icon: {
-          visible: true,
-          outerShape: "square",
-          width: 25,
-          fill: "currentColor",
-        },
+      icon: {
+        visible: true,
+        outerShape: "square",
+        width: 25,
+        fill: "currentColor",
       },
-      line_width: 1,
     },
   };
 };
@@ -122,19 +135,24 @@ export default {
     const me = this;
 
     for await (const d of me.ucbData()) {
-      console.log("ucbData:", d);
+      // console.log("ucbData:", d);
+
+      me.currentData.push(d);
 
       const rewards = me.makeFullSeries(d, "rewards");
-      console.log("Rewards series:", rewards);
-
       const smoothRewards = me.makeSmoothSeries(rewards);
-      console.log("Smoothened rewards:", smoothRewards);
-
       me.series.push(smoothRewards);
+      // console.log("Rewards series:", rewards);
 
-      console.log("Selected:", me.selected);
-      console.log("me.series:", me.series);
-      console.log("Now have", me.series.length, " series loaded");
+      // console.log("Smoothened rewards:", smoothRewards);
+
+      const losses = me.makeFullSeries(d, "losses");
+      const smoothLosses = me.makeSmoothSeries(losses);
+      me.seriesLosses.push(smoothLosses);
+
+      // console.log("Selected:", me.selected);
+      // console.log("me.series:", me.series);
+      // console.log("Now have", me.series.length, " series loaded");
 
       me.chartOptions = JSC.merge(me.chartOptions, {
         defaultPoint: {
@@ -162,14 +180,28 @@ export default {
           legendEntry: { visible: false },
         },
       ],
-      seriesData: [],
+      seriesLosses: [
+        {
+          name: "Name",
+          points: [],
+          legendEntry: { visible: false },
+        },
+      ],
+      metrics: [{ name: "rewards" }, { name: "losses" }],
+      currentData: [],
       dataLoaded: false,
       smoothRatio: 0.1,
       chartOptions: chartConfig(),
       selected: "Name",
+      currentMetric: "rewards",
     };
   },
   methods: {
+    toggleMetric: () => {
+      this.currentMetric =
+        this.currentMetric == "rewards" ? "losses" : "rewards";
+      this.selectMetric();
+    },
     selectionChanged: () => {
       selectSeries();
     },
@@ -177,21 +209,42 @@ export default {
       const me = this;
       const chart = me.chartInstance() || argChart;
       chart?.series().each(function (s) {
-        s.options({ selected: me.selected === s.name });
+        const visible = me.currentMetric === s.attributes.metric;
+        s.options({ selected: visible && me.selected === s.name });
       });
+    },
+    selectMetric: function (argChart) {
+      const me = this;
+      const chart = this.chartInstance() || argChart;
+      chart?.options({
+        series: me.currentMetric == "rewards" ? me.series : me.seriesLosses,
+      }); //
+      //       chart?.series().each(function (s) {
+      //         const visible = me.currentMetric === s.attributes.metric;
+      //         const selected = me.selected === s.name;
+      //         s.options({
+      //           mute: !visible,
+      //           selected: selected && !visible ? false : selected,
+      //         });
+      //       });
     },
     chartInstance: function () {
       return this.$refs.myChart.instance;
     },
-    makeFullSeries: function (jsonData, name) {
-      const exp_cst = jsonData.exploration_constant.toFixed(2);
+    makeFullSeries: function (jsonData, metricName) {
+      const exp_cst = `${jsonData.exploration_constant.toFixed(2)}`;
       return {
-        name: jsonData.name,
+        name: `ucb_${metricName}_${exp_cst}`,
         attributes: {
           exploration: exp_cst,
+          metric: metricName,
         },
-        legendEntry: { value: "%exploration" },
-        points: jsonData[name].map((val, ind) => {
+        legendEntry: {
+          value: "%exploration",
+          states: {},
+        },
+        label: { text: "%metric -- %exploration" },
+        points: jsonData[metricName].map((val, ind) => {
           return { x: ind, y: val };
         }),
       };
