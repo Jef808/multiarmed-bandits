@@ -78,3 +78,37 @@ const getIntervals = function(
     };
   });
 };
+
+// See https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+export function sampleGaussianNoise(mean: number, stdDev: number) {
+  let a: number, b: number;
+  do {
+    a = Math.random();
+  } while (a <= Number.EPSILON);
+  b = Math.random();
+  const sqrtMinusTwoLogA = Math.sqrt(-2.0 * Math.log(a));
+  const twoPi = 2.0 * Math.PI;
+
+  var spare = sqrtMinusTwoLogA * Math.cos(twoPi * b);
+  var spareIsUnused = false;
+
+  if (spareIsUnused) {
+    spareIsUnused = false;
+    return mean + stdDev * spare;
+  } else {
+    let u: number, v: number, s: number;
+    do {
+      u = Math.random() * 2 - 1;
+      v = Math.random() * 2 - 1;
+      s = Math.pow(u, 2) + Math.pow(v, 2);
+    } while (s > 1.0 - Number.EPSILON || s < Number.EPSILON);
+
+    s = Math.sqrt((-2.0 * Math.log(s)) / s);
+    spare = v * s;
+    spareIsUnused = true;
+
+    console.log("Returning noise of ", mean + stdDev * u * s);
+
+    return mean + stdDev * u * s;
+  }
+}
