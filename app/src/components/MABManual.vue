@@ -1,5 +1,6 @@
 <template>
   <div>
+    <div><h3>Manual Sampling</h3></div>
     <JSCarting
       id="chart-manual"
       class="flex chart"
@@ -8,11 +9,18 @@
       :options="chartOptions"
     ></JSCarting>
   </div>
+  <MABView
+    id="chart-expectations"
+    class="flex chart"
+    :actionExpectations="series.expectedValues"
+    :gaussianNoiseStdDev="sampleNoiseStdDev"
+  ></MABView>
 </template>
 
 <script>
-import JSCharting, { JSC } from "jscharting-vue";
 import { assert, sampleGaussianNoise } from "./../js/utils";
+import MABView from "./MABView.vue";
+import JSCharting, { JSC } from "jscharting-vue";
 
 const chartConfig = () => {
   return {
@@ -104,6 +112,7 @@ const chartConfig = () => {
 export default {
   components: {
     JSCharting,
+    MABView,
   },
   props: {
     numberOfArms: { default: 10, type: Number },
@@ -136,38 +145,47 @@ export default {
   mounted() {
     const me = this;
 
-    me.series.expectedValues.points = Array.from(
-      { length: me.numberOfArms },
-      (i) => {
+    const arms = Array.from(
+      { length: me.numberOfArms }, (v, i) => i + 1);
+
+    me.series.expectedValues = {
+      points: arms.map((ele) => {
         const expectedValue = sampleGaussianNoise(
           me.sampleNoiseMean,
           me.sampleNoiseStdDev
         );
         return {
-          x: i + 1,
+          x: ele + 1,
           y: expectedValue,
-          name: `${i + 1}`,
-          id: `${i + 1}`,
-        };
-      }
-    );
-
-    me.chartOptions = JSC.merge(me.chartOptions, {
-      series: me.series.expectedValues,
-    });
-
-    me.series.results = {
-      points: Array.from({ length: me.numberOfArms }, (i) => {
-        return {
-          x: i + 1,
-          y: 0,
-          regret: 0,
-          visits: 0,
-          name: `${i + 1}`,
-          id: `${i + 1}`,
+          name: `${ele + 1}`,
+          attributes: [
+            {
+              totalRewards: 0.0,
+              regret: 0.0,
+              visits: 0,
+            },
+          ],
         };
       }),
     };
+
+    me.series.results = {
+      points: arms.map((ele) => {
+        return {
+          x: ele,
+          y: 0,
+          totalRewards: 0.0,
+          regret: 0.0,
+          visits: 0,
+          name: String(ele),
+        };
+        }),
+      };
+
+    me.chartOptions = SCJ.merge(me.chartOptions, {
+      series: me.series;
+    });
+
     me.dataLoaded = true;
 
     console.log("After mounted():", me.series.expectedValues);
@@ -190,6 +208,12 @@ export default {
           },
         },
       };
+    },
+    getResults(point) {
+      return {
+        regret: point.regret,
+        visits: point.visits,
+        totalRewards: point.totalRewards,
     },
     sample(armNumber) {
       assert(
