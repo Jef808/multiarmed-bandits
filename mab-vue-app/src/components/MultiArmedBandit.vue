@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watchEffect, onMounted, onUnmounted } from "vue";
 import MABInteractive from "./MABInteractive.vue";
-import { withGaussianNoise } from "./../scripts/utils";
+//import { withGaussianNoise } from "./../scripts/utils";
 
 interface Props {
   numberOfArms: number;
@@ -16,7 +16,7 @@ interface Arm {
   value: number;
   visits: number;
   total: number;
-  sample: () => number;
+  sample: function(): number;
 }
 
 const {
@@ -31,10 +31,10 @@ let arms: Array<Arm> = $ref([]);
 let dataReady: boolean = $ref(false);
 
 onMounted(() => {
-  const genValue = withGaussianNoise({
-    mean: valueMean,
-    stdDev: valueStdDev,
-  });
+<!--  const genValue = withGaussianNoise({-->
+<!--    mean: valueMean,-->
+<!--    stdDev: valueStdDev,-->
+<!--  });-->
 
   arms = Array.from({ length: numberOfArms }, (v, i) => {
     const value = genValue(0.0);

@@ -1,11 +1,11 @@
-import { Types } from "./utils";
+import { Types } from "./../scripts/utils";
 
-export interface IParams<D> {
+interface IParams<D> {
     data: D;
     callback: (d: D) => number;
 }
 
-export interface IBuilder<D> {
+interface IBuilder<D> {
     data(d: D): this;
     callback(cb: (d: D) => number): this;
     finalize(): Required<IParams<D>>;
@@ -21,7 +21,7 @@ class ParamsDefaults<D> implements IParams<D> {
         public callback: (d: D) => number = callbackDefault
     ) {
         const validate: boolean = !!(() => {
-            let check: boolean | null = <D extends Required<D> ? boolean : null>true;
+            const check: boolean | null = <D extends Required<D> ? boolean : null>true;
             return check;
         })();
 
@@ -31,7 +31,7 @@ class ParamsDefaults<D> implements IParams<D> {
     }
 }
 
-export class Builder<DistData> implements IBuilder<DistData> {
+class Builder<DistData> implements IBuilder<DistData> {
     public params!: IParams<DistData>;
 
     constructor(defs: DistData) {

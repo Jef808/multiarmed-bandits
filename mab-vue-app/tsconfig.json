@@ -1,19 +1,11 @@
 {
+  "files": [],
+  "include": ["tsconfig.node.json", "./src/**/*d.ts"],
+  "exclude": ["**/*/build", "node_modules"],
   "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "strict": true,
-    "jsx": "preserve",
-    "sourceMap": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "esModuleInterop": true,
-    "lib": ["ESNext", "DOM"],
-    "skipLibCheck": true
+    "baseUrl": "/home/jfa/projects/ai/mab-vue-app"
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "exclude": ["src/**/build/"],
-  "references": [{ "path": "tsconfig.node.json" }]
+  "references": [
+      { "path": "./src/tsconfig.json" }
+  ]
 }

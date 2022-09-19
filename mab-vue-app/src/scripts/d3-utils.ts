@@ -25,12 +25,15 @@ export function getNumberOfBins(p: binParams, d: Array<Point>): number {
     switch (key) {
         case "number": {
             result = <number>p.number;
+            break;
         }
         case "size": {
             result = d.length / <number>p.size;
+            break;
         }
         case "ratio": {
             result = d.length * <number>p.ratio;
+            break;
         }
     }
 
@@ -40,8 +43,7 @@ export function getNumberOfBins(p: binParams, d: Array<Point>): number {
 export function getBins(
     p: binParams,
     x: Array<number>,
-    y: Array<number>,
-    width: number
+    y: Array<number>
 ) {
     const numberOfBins = getNumberOfBins(
         p,

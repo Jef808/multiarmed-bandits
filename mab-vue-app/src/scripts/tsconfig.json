@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig-base",
+  "compilerOptions": {
+    "removeComments": false,
+    "outFile": "../../build/utils.js",
+    "preserveConstEnums": true,
+    "types": ["node"]
+  },
+  "files": ["d3-utils.ts", "utils.ts"]
+}

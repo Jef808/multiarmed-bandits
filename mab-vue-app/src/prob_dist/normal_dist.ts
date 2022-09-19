@@ -1,4 +1,4 @@
-import { construct_distribution } from "./../prob-dist";
+import construct_distribution from "./prob-dist";
 
 type NormalData = { mean: number; stdDev: number };
 const normalDefs: NormalData = { mean: 0.0, stdDev: 1.0 };
