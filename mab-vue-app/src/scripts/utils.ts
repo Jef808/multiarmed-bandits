@@ -1,12 +1,19 @@
-export function withGaussianNoise(mean: number, stdDev: number) {
-    return (num?: number) => (num ?? 0) + mean + stdDev * boxMullerTransform();
-}
+export namespace Types {
+    export type ObjectDescriptor<D, M> = {
+        data?: D;
+        methods?: M & ThisType<D & M>;
+    };
 
-const boxMullerTransform = () => {
-    let u = 0;
-    while (u < Number.EPSILON) {
-        u = Math.random();
+    export function makeObject<D, M>(desc: ObjectDescriptor<D, M>): D & M {
+        let data: object = desc.data || {};
+        let methods: object = desc.methods || {};
+        return { ...data, ...methods } as D & M;
     }
-    const v = Math.random();
-    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-};
+
+    export type Permissive<Type> = {
+        [Property in keyof Type]+?: Type[Property];
+    };
+    export type Strict<Type> = {
+        [Property in keyof Type]-?: Type[Property];
+    };
+}

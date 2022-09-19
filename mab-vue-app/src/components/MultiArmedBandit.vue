@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watchEffect, onMounted } from "vue";
+import { watchEffect, onMounted, onUnmounted } from "vue";
 import MABInteractive from "./MABInteractive.vue";
 import { withGaussianNoise } from "./../scripts/utils";
 
@@ -15,6 +15,8 @@ interface Arm {
   id: number;
   value: number;
   visits: number;
+  total: number;
+  sample: () => number;
 }
 
 const {
@@ -25,18 +27,38 @@ const {
   noiseStdDev = 1.0,
 } = defineProps<Props>();
 
-let arms: Array<Arm> = $ref();
-const dataReady: bool = $ref(false);
+let arms: Array<Arm> = $ref([]);
+let dataReady: boolean = $ref(false);
 
 onMounted(() => {
-  const genValue: () => number = withGaussianNoise(valueMean, valueStdDev);
+  const genValue = withGaussianNoise({
+    mean: valueMean,
+    stdDev: valueStdDev,
+  });
 
   arms = Array.from({ length: numberOfArms }, (v, i) => {
-    return { id: i + 1, value: genValue(), visits: 0 };
+    const value = genValue(0.0);
+    return {
+      id: i + 1,
+      value: value,
+      visits: 0,
+      total: 0.0,
+      sample: () => {
+        const reward = genValue(value);
+        arms[i].visits += 1;
+        arms[i].total += reward;
+        return reward;
+      },
+    };
   });
 
   dataReady = true;
   console.log("arms:", arms);
+});
+
+onUnmounted(() => {
+  arms.length = 0;
+  dataReady = false;
 });
 
 watchEffect(() => {
@@ -56,10 +78,12 @@ watchEffect(() => {
   <h1 class="text-3xl font-bold underline">
     MAB with {{ numberOfArms }} arms.
   </h1>
+  <MABInteractive v-if="dataReady" :arms="arms" />
+  <br />
   <ol>
     <li v-for="arm in arms" :key="arm.id">
-      Arm {{ arm.id }}: value: {{ arm.value }}, visits: {{ arm.visits }}
+      Arm {{ arm.id }}: value: {{ arm.value.toFixed(2) }}, visits:
+      {{ arm.visits }}, total: {{ arm.total.toFixed(2) }}
     </li>
   </ol>
-  <MABInteractive v-if="dataReady" :arms="arms" />
 </template>

@@ -9,11 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "child_process": "^1.0.2",
     "d3": "^7.6.1",
+    "process": "^0.11.10",
     "vue": "^3.2.37"
   },
   "devDependencies": {
     "@babel/types": "^7.19.0",
+    "@types/d3": "^7.4.0",
     "@types/vue": "^2.0.0",
     "@vitejs/plugin-vue": "^3.1.0",
     "autoprefixer": "^10.4.11",

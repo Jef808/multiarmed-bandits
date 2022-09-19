@@ -3,7 +3,14 @@
     "composite": true,
     "module": "ESNext",
     "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "declarationDir": "./types",
+    "explainFiles": true,
+    "extendedDiagnostics": true,
+    "listEmittedFiles": true,
+    "listFiles": true,
+    "isolatedModules": false
   },
   "include": ["vite.config.ts"]
 }
