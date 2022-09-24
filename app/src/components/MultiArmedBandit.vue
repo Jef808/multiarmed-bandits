@@ -2,7 +2,7 @@
   <div>
     <div>
       <h1>Multi-armed bandit</h1>
-      <ViolinChart :data="arms" />
+      <ViolinChart :data="arms" @sample="onSample" />
     </div>
   </div>
 </template>
@@ -29,13 +29,18 @@ const arms = ref(
   })
 );
 
-const onSample = (id: number) => {
+const sampleCount = ref(0);
+
+function onSample(id: number) {
+  console.log("Handling 'sample' event with 'id' = ", id);
+
   if (id < 0 || id >= arms.value.length) {
     console.log("Sample id out of bounds");
     return;
   }
-  arms.value[id].sample();
-};
+  arms.value[id].sample(sampleCount.value);
+  ++sampleCount.value;
+}
 
 onMounted(() => {
   arms.value.forEach((a) => {

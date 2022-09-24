@@ -9,12 +9,12 @@
           v-for="d in data"
           :key="d.id"
           :transform="itemTranslationAttr.at(d.id)"
+          @click="chartClick(d.id)"
         >
           <path
             id="d.id"
             style="stroke: none; fill: #69b3a2"
             :d="violinPath.get(d.id)"
-            @click="onSample(d.id)"
           />
         </g>
       </svg>
@@ -35,7 +35,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { defineProps, ref, onMounted, computed } from "vue";
+import { defineProps, defineEmits, ref, onMounted, computed } from "vue";
 import type { Arm } from "./arm";
 import { getXScale, getYScale, violinSvgPath } from "./yBins";
 import { select } from "d3-selection";
@@ -66,6 +66,10 @@ const props = withDefaults(defineProps<Props>(), {
   marginLeft: 60,
 });
 
+const emit = defineEmits<{
+  (e: "sample", id: number): void;
+}>();
+
 const width = ref(props.outerWidth - props.marginRight - props.marginLeft);
 const height = ref(props.outerHeight - props.marginTop - props.marginBottom);
 const numberOfBins = ref(20);
@@ -75,6 +79,11 @@ const yAxisContainer = ref(d3.select<SVGGElement, any>("g[id=yAxisContainer]"));
 onMounted(() => {
   updateAxis();
 });
+
+function chartClick(id: number) {
+  console.log("emitting event 'sample' with 'id' = ", id);
+  emit("sample", id);
+}
 
 const xScale = computed(() => {
   return getXScale(props.data, width.value);
