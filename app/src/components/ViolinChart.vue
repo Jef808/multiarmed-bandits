@@ -3,17 +3,18 @@
     <div id="viz">
       <svg :width="outerWidth" :height="outerHeight">
         <g :transform="globalTranslationAttr" />
-        <g id="xAxis" :transform="xAxisTranslationAttr" />
-        <g id="yAxis" />
+        <g id="xAxisContainer" :transform="xAxisTranslationAttr" />
+        <g id="yAxisContainer" />
         <g
           v-for="d in data"
           :key="d.id"
           :transform="itemTranslationAttr.at(d.id)"
         >
           <path
-            :id="d.id"
+            id="d.id"
             style="stroke: none; fill: #69b3a2"
             :d="violinPath.get(d.id)"
+            @click="onSample(d.id)"
           />
         </g>
       </svg>
@@ -36,57 +37,43 @@
 <script setup lang="ts">
 import { defineProps, ref, onMounted, computed } from "vue";
 import type { Arm } from "./arm";
-import { getXScale, getYScale, yBinData, violinSvgPath } from "./yBins";
-
-import { select, selectAll } from "d3-selection";
-import { scaleBand, scaleLinear } from "d3-scale";
+import { getXScale, getYScale, violinSvgPath } from "./yBins";
+import { select } from "d3-selection";
 import { axisBottom, axisLeft } from "d3-axis";
-import { extent, bin } from "d3-array";
-import { area, curveCatmullRom } from "d3-shape";
 
 const d3 = {
   select,
-  selectAll,
-  scaleBand,
-  scaleLinear,
   axisBottom,
   axisLeft,
-  extent,
-  bin,
 };
 
-export interface Margin {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-export interface Props {
-  margin?: Margin;
+interface Props {
   outerWidth?: number;
   outerHeight?: number;
+  marginTop?: number;
+  marginRight?: number;
+  marginBottom?: number;
+  marginLeft?: number;
   data: Arm[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  margin: {
-    top: 10,
-    right: 30,
-    bottom: 30,
-    left: 70,
-  },
   outerWidth: 800,
   outerHeight: 480,
+  marginTop: 30,
+  marginRight: 30,
+  marginBottom: 70,
+  marginLeft: 60,
 });
 
-const width = ref(props.outerWidth - props.margin.right - props.margin.left);
-const height = ref(props.outerHeight - props.margin.top - props.margin.bottom);
+const width = ref(props.outerWidth - props.marginRight - props.marginLeft);
+const height = ref(props.outerHeight - props.marginTop - props.marginBottom);
 const numberOfBins = ref(20);
+const xAxisContainer = ref(d3.select<SVGGElement, any>("g[id=xAxisContainer]"));
+const yAxisContainer = ref(d3.select<SVGGElement, any>("g[id=yAxisContainer]"));
 
 onMounted(() => {
-  d3.select("#xAxis").call(d3.axisBottom(xScale.value));
-  d3.select("#yAxis").call(d3.axisLeft(yScale.value));
+  updateAxis();
 });
 
 const xScale = computed(() => {
@@ -97,7 +84,7 @@ const yScale = computed(() => {
 });
 
 const globalTranslationAttr = computed(() => {
-  return `translate(${props.margin.left},${props.margin.top})`;
+  return `translate(${props.marginLeft},${props.marginTop})`;
 });
 
 const xAxisTranslationAttr = computed(() => {
@@ -111,11 +98,26 @@ const itemTranslationAttr = computed(() => {
   });
 });
 
-const bins = computed(() => {
-  return yBinData(props.data, numberOfBins.value, yScale.value);
-});
+function onSample(id: number) {
+  props.data[id].sample();
+}
+
+function updateAxis() {
+  xAxisContainer.value = d3.select<SVGGElement, any>("g[id=xAxisContainer]");
+  xAxisContainer.value.selectChildren("g").remove();
+  xAxisContainer.value.call(d3.axisBottom(xScale.value));
+
+  yAxisContainer.value = d3.select<SVGGElement, any>("g[id=yAxisContainer]");
+  yAxisContainer.value.selectChildren("g").remove();
+  yAxisContainer.value.call(d3.axisLeft(yScale.value));
+}
 
 const violinPath = computed(() => {
-  return violinSvgPath(bins.value, xScale.value, yScale.value);
+  return violinSvgPath(
+    props.data,
+    numberOfBins.value,
+    xScale.value,
+    yScale.value
+  );
 });
 </script>

@@ -15,13 +15,15 @@ import ViolinChart from "./ViolinChart.vue";
 
 export interface Props {
   numberOfArms: number;
+  initialNumberOfSamples: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   numberOfArms: 10,
+  initialNumberOfSamples: 100,
 });
 
-const arms: Arm[] = ref(
+const arms = ref(
   Array.from({ length: props.numberOfArms }, (v, i) => {
     return new Arm(i, useRandomNormal(0, 1));
   })
@@ -32,12 +34,12 @@ const onSample = (id: number) => {
     console.log("Sample id out of bounds");
     return;
   }
-  arms.value.at(id).sample();
+  arms.value[id].sample();
 };
 
 onMounted(() => {
   arms.value.forEach((a) => {
-    Array.from({ length: 100 }, () => onSample(a.id));
+    Array.from({ length: props.initialNumberOfSamples }, () => onSample(a.id));
   });
 });
 </script>

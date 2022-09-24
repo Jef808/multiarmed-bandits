@@ -4,7 +4,7 @@ import MultiArmedBandit from "./components/MultiArmedBandit.vue";
 
 <template>
   <main>
-    <MultiArmedBandit :numberOfArms="10" />
+    <MultiArmedBandit :numberOfArms="10" :initialNumberOfSamples="100" />
   </main>
 </template>
 
