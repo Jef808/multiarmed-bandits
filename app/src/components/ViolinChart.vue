@@ -13,7 +13,8 @@
         >
           <path
             id="d.id"
-            style="stroke: none; fill: #69b3a2"
+            strokestyle="none"
+            :fill="colorMap.get(d.id)"
             :d="violinPath.get(d.id)"
           />
         </g>
@@ -37,7 +38,12 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, onMounted, computed } from "vue";
 import type { Arm } from "./arm";
-import { getXScale, getYScale, violinSvgPath } from "./yBins";
+import {
+  getXScale,
+  getYScale,
+  recentStepsColorMap,
+  violinSvgPath,
+} from "./yBins";
 import { select } from "d3-selection";
 import { axisBottom, axisLeft } from "d3-axis";
 
@@ -120,6 +126,10 @@ function updateAxis() {
   yAxisContainer.value.selectChildren("g").remove();
   yAxisContainer.value.call(d3.axisLeft(yScale.value));
 }
+
+const colorMap = computed(() => {
+  return recentStepsColorMap(props.data);
+});
 
 const violinPath = computed(() => {
   return violinSvgPath(

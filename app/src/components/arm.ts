@@ -1,8 +1,14 @@
 import { useRandomNormal } from "./randomNormal";
 
-export type Sample = {
-  readonly value: number;
-  readonly step: number;
+export class Sample {
+  constructor(
+    public value: number,
+    public step: number
+  ) { }
+}
+
+export function ValueOf(sample: Sample) {
+  return sample.value;
 }
 
 export class Arm {
@@ -15,7 +21,7 @@ export class Arm {
 
   sample(step: number) {
     const value = this.value + useRandomNormal(0, this.noiseStdDev);
-    this.samples.push({ value, step });
+    this.samples.push(new Sample(value, step));
     return value;
   }
 }
