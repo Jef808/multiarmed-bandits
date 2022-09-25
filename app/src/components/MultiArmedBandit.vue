@@ -4,6 +4,9 @@
       <h1>Multi-armed bandit</h1>
       <ViolinChart :data="arms" @sample="onSample" />
     </div>
+    <p>
+      <button @click="sampleHundred">Sample 100 each</button>
+    </p>
   </div>
 </template>
 
@@ -40,6 +43,15 @@ function onSample(id: number) {
   }
   arms.value[id].sample(sampleCount.value);
   ++sampleCount.value;
+}
+
+function sampleHundred() {
+  console.log("Sampling 100 times for each arms");
+  for (let a of arms.value) {
+    for (let i = 0; i < 100; ++i) {
+      onSample(a.id);
+    }
+  }
 }
 
 onMounted(() => {

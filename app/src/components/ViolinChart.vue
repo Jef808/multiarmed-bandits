@@ -31,6 +31,19 @@
           step="5"
           type="number"
         />
+        <label>Recent Ratio: </label>
+        <input
+          id="recentRatio"
+          v-model="recentRatio"
+          min="0.1"
+          max="0.9"
+          step="0.1"
+          type="number"
+        />
+      </p>
+      <p>
+        <label>Repeat: </label>
+        <input id="input-repeat" v-model="repeatCount" type="number" />
       </p>
     </div>
   </div>
@@ -79,6 +92,8 @@ const emit = defineEmits<{
 const width = ref(props.outerWidth - props.marginRight - props.marginLeft);
 const height = ref(props.outerHeight - props.marginTop - props.marginBottom);
 const numberOfBins = ref(20);
+const recentRatio = ref(0.25);
+const repeatCount = ref(1);
 const xAxisContainer = ref(d3.select<SVGGElement, any>("g[id=xAxisContainer]"));
 const yAxisContainer = ref(d3.select<SVGGElement, any>("g[id=yAxisContainer]"));
 
@@ -87,8 +102,10 @@ onMounted(() => {
 });
 
 function chartClick(id: number) {
-  console.log("emitting event 'sample' with 'id' = ", id);
-  emit("sample", id);
+  for (let i = 0; i < repeatCount.value; i++) {
+    console.log("emitting event 'sample' with 'id' = ", id);
+    emit("sample", id);
+  }
 }
 
 const xScale = computed(() => {
@@ -113,10 +130,6 @@ const itemTranslationAttr = computed(() => {
   });
 });
 
-function onSample(id: number) {
-  props.data[id].sample();
-}
-
 function updateAxis() {
   xAxisContainer.value = d3.select<SVGGElement, any>("g[id=xAxisContainer]");
   xAxisContainer.value.selectChildren("g").remove();
@@ -128,7 +141,7 @@ function updateAxis() {
 }
 
 const colorMap = computed(() => {
-  return recentStepsColorMap(props.data);
+  return recentStepsColorMap(props.data, recentRatio.value);
 });
 
 const violinPath = computed(() => {
