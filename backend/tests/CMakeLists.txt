@@ -1,15 +1,10 @@
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+project(tests)
 
-file(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/ex_*.cpp")
+message("backend_DIR: " ${backend_DIR})
 
-add_subdirectory(reqrep)
+# include_directories(${backend_DIR} ${ZeroMQ_INCLUDE_DIRS})
+# link_libraries(${ZeroMQ_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
-
-foreach(ex ${examples})
-  string(REPLACE ".cpp" "" ex_name ${ex})
-  add_executable(${ex_name} ${ex})
-endforeach()
-
-add_executable(client_cmdline ${CMAKE_CURRENT_SOURCE_DIR}/client_cmdline.cpp)
-
-#add_executable(${PROJECT_NAME}__cmdline ${CMAKE_CURRENT_SOURCE_DIR}/client_cmdline.cpp)
+add_subdirectory(jsonrpc)
+# add_subdirectory(reqrep)
+# add_subdirectory(boost_describe)

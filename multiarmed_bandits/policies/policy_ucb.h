@@ -19,12 +19,12 @@
 struct Policy_UCB {
   explicit Policy_UCB(double c = 2.0);
 
-  template <typename Action>
-  Action operator()(const std::vector<ExtActionT<Action>> &actions) const;
+  template <typename ActionT>
+  ActionT operator()(const std::vector<ExtActionT<ActionT>> &actions) const;
 
   /** Push back each action's UCB value at the end of the provided buffer. */
-  template <typename Action>
-  void get_action_values(const std::vector<ExtActionT<Action>> &actions,
+  template <typename ActionT>
+  void get_action_values(const std::vector<ExtActionT<ActionT>> &actions,
                          std::vector<double> &buffer) const;
 
   // For compatibility
@@ -52,19 +52,19 @@ double UCB(const double C, int total_visits,
   return exploitation_term + C * exploration_term;
 }
 
-template <typename Action>
-Action
-Policy_UCB::operator()(const std::vector<ExtActionT<Action>> &actions) const {
+template <typename ActionT>
+ActionT
+Policy_UCB::operator()(const std::vector<ExtActionT<ActionT>> &actions) const {
   assert(not actions.empty() && "Agent has empty actions buffer");
 
-  int total_visits =
-      std::accumulate(actions.begin(), actions.end(), 0,
-                      [](int &s, const auto &ea) { return s += ea.visits; });
+  int total_visits = std::accumulate(
+      actions.begin(), actions.end(), std::move(0),
+      [](int &&s, const auto &ea) { return std::move(s) + ea.visits; });
 
   return *std::max_element(
       actions.begin(), actions.end(),
-      [&total_visits, C = this->c](const ExtActionT<Action> &a,
-                                   const ExtActionT<Action> &b) {
+      [&total_visits, C = this->c](const ExtActionT<ActionT> &a,
+                                   const ExtActionT<ActionT> &b) {
         return UCB(C, total_visits, a) < UCB(C, total_visits, b);
       });
 }

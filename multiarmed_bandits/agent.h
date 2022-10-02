@@ -19,13 +19,6 @@ public:
   std::pair<Action, double> sample();
 
   /**
-   * Select the action using the greedy policy with
-   * probability 1-epsilon, and select a random action
-   * with probability epsilon.
-   */
-  Action select();
-
-  /**
    * Update the agent's statistics after a
    * newly sampled action.
    */

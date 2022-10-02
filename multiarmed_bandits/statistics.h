@@ -58,13 +58,10 @@ public:
 
     if (inserted) {
       m_names.push_back(name);
-
-#ifndef NDEBUG
-      std::cerr << "Added " + name + " to the store." << std::endl;
+      return it->second;
     }
-#endif
 
-    return it->second;
+    throw std::runtime_error("Duplicate statistics name");
   }
 
   template <Type T>
