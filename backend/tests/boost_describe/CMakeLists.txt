@@ -1,5 +1,0 @@
-add_executable(boost_describe_tojson boost_describe_tojson.cpp)
-add_executable(boost_describe_fromjson boost_describe_fromjson.cpp)
-add_executable(boost_describe_enumtostring boost_describe_enumtostring.cpp)
-add_executable(boost_describe_stringtoenum boost_describe_stringtoenum.cpp)
-add_executable(boost_describe_equality boost_describe_equality.cpp)
