@@ -2,11 +2,16 @@
 
 #include <algorithm>
 #include <random>
+#include <utility>
 
 NArmedBandit::NArmedBandit(size_t number_of_actions)
     : N{number_of_actions}, m_values{} {
   m_dist = std::normal_distribution<>(0.0, 1.0);
   reset();
+}
+
+bool NArmedBandit operator==(const NArmedBandit &other) const {
+  return m_values == other.m_values;
 }
 
 void NArmedBandit::reset() {

@@ -12,7 +12,10 @@ struct Action {
 
 class NArmedBandit {
 public:
-  using Action = Action;
+  struct Action {
+    size_t idx;
+    bool operator==(const Action &other) const { return idx == other.idx; }
+  };
 
   /**
    * @Param number_of_actions  The number of available
@@ -56,9 +59,14 @@ public:
    */
   Action best_action() const;
 
+  /**
+   * Compare the actions' expected values.
+   */
+  bool operator==(const NArmedBandit &other) const;
+
 private:
   /* The number of actions. */
-  const size_t N;
+  size_t N;
   /* The expected values of the actions. */
   std::vector<double> m_values;
   /* Used to obtain random seeds when resetting. */
