@@ -1,7 +1,7 @@
 #ifndef POLICY_GREEDY_H_
 #define POLICY_GREEDY_H_
 
-#include "../extactions.h"
+#include "extactions.h"
 #include "policy_helpers.h"
 #include "policy_random.h"
 
@@ -48,8 +48,6 @@ Action Policy_Greedy::operator()(
       });
 }
 
-void Policy_Greedy::reset() {
-    policy_random.reset();
-}
+void Policy_Greedy::reset() { policy_random.reset(); }
 
 #endif // POLICY_GREEDY_H_

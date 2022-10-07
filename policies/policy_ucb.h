@@ -1,7 +1,7 @@
 #ifndef POLICY_UCB_H_
 #define POLICY_UCB_H_
 
-#include "../extactions.h"
+#include "extactions.h"
 #include "policy_helpers.h"
 
 #include <algorithm>

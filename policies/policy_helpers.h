@@ -1,7 +1,7 @@
 #ifndef POLICY_HELPERS_H_
 #define POLICY_HELPERS_H_
 
-#include "../extactions.h"
+#include "extactions.h"
 
 /**
  * If the action has not been visited, return the prior
@@ -9,9 +9,6 @@
  */
 template <typename Action>
 double SampleAverage(const ExtActionT<Action> &e_action);
-
-
-
 
 template <typename Action>
 double SampleAverage(const ExtActionT<Action> &e_action) {

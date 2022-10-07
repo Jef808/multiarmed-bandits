@@ -12,6 +12,8 @@ struct Action {
 
 class NArmedBandit {
 public:
+  using Action = Action;
+
   /**
    * @Param number_of_actions  The number of available
    * actions to choose from.

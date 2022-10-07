@@ -1,10 +1,9 @@
 #ifndef SERVER_H_
 #define SERVER_H_
 
-#include <atomic>
 #include <boost/json/fwd.hpp>
 #include <condition_variable>
-#include <iostream>
+#include <iosfwd>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -31,14 +30,13 @@ public:
 
 private:
   bool request_waiting_{false};
-  // std::atomic<bool> running_;
   std::shared_ptr<zmq::socket_t> socket_;
   std::thread job_;
   std::condition_variable cv_;
   std::mutex m_;
   std::mutex m_end_;
 
-  static boost::json::object process_request(const std::string &req) noexcept;
+  std::string process_request(const std::string &req) noexcept;
 
   friend std::ostream &operator<<(std::ostream &os, const server_t &server);
 };

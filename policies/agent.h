@@ -1,8 +1,9 @@
 #ifndef AGENT_H_
 #define AGENT_H_
 
+#include "../environments/multiarmed_bandits/multiarmed_bandits.h"
 #include "extactions.h"
-#include "multiarmed_bandits.h"
+#include "policy_random.h"
 
 #include <algorithm>
 #include <cassert>
@@ -10,11 +11,13 @@
 #include <random>
 #include <utility>
 
-template <typename Policy> class Agent {
+template <typename Model = NArmedBandit, typename Policy = Policy_Random>
+class Agent {
+  using Action = typename Model::Action;
   using ExtAction = ExtActionT<Action>;
 
 public:
-  Agent(NArmedBandit &bandit, Policy &&policy);
+  Agent(Model &bandit, Policy &policy);
 
   std::pair<Action, double> sample();
 
@@ -37,7 +40,7 @@ public:
   const std::vector<double> &get_action_visits() const;
 
 private:
-  NArmedBandit &m_bandit;
+  Model &m_bandit;
   std::vector<ExtAction> m_actions;
   Policy m_policy;
 
@@ -46,14 +49,15 @@ private:
   mutable std::vector<double> m_pvalues_buffer;
 };
 
-template <typename Policy>
-inline Agent<Policy>::Agent(NArmedBandit &bandit, Policy &&policy)
-    : m_bandit{bandit}, m_actions{}, m_policy{std::move(policy)} {
+template <typename Model, typename Policy>
+inline Agent<Model, Policy>::Agent(Model &bandit, Policy &policy)
+    : m_bandit{bandit}, m_actions{}, m_policy{policy} {
   reset();
 }
 
-template <typename Policy> std::pair<Action, double> Agent<Policy>::sample() {
-  Action action = m_policy(m_actions);
+template <typename Model, typename Policy>
+std::pair<typename Model::Action, double> Agent<Model, Policy>::sample() {
+  typename Model::Action action = m_policy(m_actions);
   double reward = m_bandit.get_reward(action);
 
   update_stats(action, reward);
@@ -61,8 +65,9 @@ template <typename Policy> std::pair<Action, double> Agent<Policy>::sample() {
   return std::make_pair(action, reward);
 }
 
-template <typename Policy>
-void Agent<Policy>::update_stats(const Action &action, double reward) {
+template <typename Model, typename Policy>
+void Agent<Model, Policy>::update_stats(const typename Model::Action &action,
+                                        double reward) {
   auto it = std::find(m_actions.begin(), m_actions.end(), action);
   assert(it != m_actions.end());
 
@@ -70,7 +75,7 @@ void Agent<Policy>::update_stats(const Action &action, double reward) {
   it->total += reward;
 }
 
-template <typename Policy> void Agent<Policy>::reset() {
+template <typename Model, typename Policy> void Agent<Model, Policy>::reset() {
   m_actions.clear();
 
   std::random_device rd;
@@ -88,8 +93,8 @@ template <typename Policy> void Agent<Policy>::reset() {
   m_policy.reset();
 }
 
-template <typename Policy>
-const std::vector<double> &Agent<Policy>::get_action_values() const {
+template <typename Model, typename Policy>
+const std::vector<double> &Agent<Model, Policy>::get_action_values() const {
   m_values_buffer.clear();
   std::transform(m_actions.begin(), m_actions.end(),
                  std::back_inserter(m_values_buffer), [](const auto &ea) {
@@ -98,8 +103,8 @@ const std::vector<double> &Agent<Policy>::get_action_values() const {
   return m_values_buffer;
 }
 
-template <typename Policy>
-const std::vector<double> &Agent<Policy>::get_action_visits() const {
+template <typename Model, typename Policy>
+const std::vector<double> &Agent<Model, Policy>::get_action_visits() const {
   m_visits_buffer.clear();
   std::transform(m_actions.begin(), m_actions.end(),
                  std::back_inserter(m_visits_buffer),
@@ -107,8 +112,9 @@ const std::vector<double> &Agent<Policy>::get_action_visits() const {
   return m_visits_buffer;
 }
 
-template <typename Policy>
-const std::vector<double> &Agent<Policy>::get_action_policy_values() const {
+template <typename Model, typename Policy>
+const std::vector<double> &
+Agent<Model, Policy>::get_action_policy_values() const {
   m_pvalues_buffer.clear();
   m_policy.get_action_values(m_actions, m_pvalues_buffer);
   return m_pvalues_buffer;
