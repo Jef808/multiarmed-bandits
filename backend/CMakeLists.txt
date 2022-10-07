@@ -17,8 +17,8 @@ set_property(DIRECTORY PROPERTY COMPILE_OPTIONS "-std=c++2a")
 #message( ${rapidjson_DIR} )
 #find_package(rapidjson REQUIRED)
 
-add_executable(nl_handler nl_handler.h data_models.hpp nl_handler.cpp ../environments/multiarmed_bandits/multiarmed_bandits.cpp)
-#target_link_libraries(nl_serde ${nlohmann_LIBRARIES})
+add_executable(server server.hpp server.cpp nl_handler nl_handler.h data_models.hpp nl_handler.cpp ../environments/multiarmed_bandits/multiarmed_bandits.cpp nl_main.cpp)
+target_link_libraries(server ${ZeroMQ_LIBRARIES})
 
 # add_executable(rapidjson_parse rapidjson_handler.h rapidjson_handler.cpp)
 # add_executable(rapidjson_serialize rapidjson_serialize.h rapidjson_serialize.cpp)

@@ -39,8 +39,6 @@ data::result_t<typename M::Action> run(Agent<M, P>& agent,
 
 void handle_request(const json& req, json& rep) {
 
-    auto it = req.begin();
-
     model_var_t model_var;
     policy_var_t policy_var;
 
@@ -84,19 +82,4 @@ void handle_request(const json& req, json& rep) {
                      rep = run(agent, parameters);
                  }},
         model_var, policy_var);
-}
-
-int main(int argc, char* argv[]) {
-
-    json req =
-        R"({"model":{"name":"mab","parameters":{"numberOfArms": 10}},"policy":{"name":"ucb","parameters":{"exploration":0.7}},"parameters":{"numberOfSteps":1000}})"_json;
-    json rep;
-
-    std::cout << "Request: " << req.dump(4) << std::endl;
-
-    handle_request(req, rep);
-
-    std::cout << "Response: " << rep.dump(4) << std::endl;
-
-    return 0;
 }

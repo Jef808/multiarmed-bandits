@@ -1,3 +1,3 @@
-#include <string>
+#include <nlohmann/json.hpp>
 
-std::string handle_request(const std::string &req) noexcept;
+void handle_request(const nlohmann::json& req, nlohmann::json& rep);
