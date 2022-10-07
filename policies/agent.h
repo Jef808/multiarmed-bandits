@@ -17,6 +17,9 @@ class Agent {
   using ExtAction = ExtActionT<Action>;
 
 public:
+  using model_t = Model;
+  using policy_t = Policy;
+
   Agent(Model &bandit, Policy &policy);
 
   std::pair<Action, double> sample();

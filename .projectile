@@ -1,0 +1,3 @@
+(projectile-project-compilation-dir . /home/jfa/projects/ai/)
+(projectile-project-compilation-cmd . cmake --build build)
+(projectile-project-configure-cmd . cmake -S . -B build)

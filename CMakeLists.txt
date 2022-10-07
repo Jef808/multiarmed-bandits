@@ -7,7 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(this_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 option(mabviz_BUILD_TESTS ON)
-option(mabviz_BUILD_ENVIRONMENTS OFF)
+option(mabviz_BUILD_ENVIRONMENTS ON)
 
 include(Catch2)
 find_package(Catch2 REQUIRED)

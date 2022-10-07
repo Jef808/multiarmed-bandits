@@ -10,7 +10,7 @@ NArmedBandit::NArmedBandit(size_t number_of_actions)
   reset();
 }
 
-bool NArmedBandit operator==(const NArmedBandit &other) const {
+bool NArmedBandit::operator==(const NArmedBandit &other) const {
   return m_values == other.m_values;
 }
 
@@ -35,4 +35,4 @@ double NArmedBandit::expectation(size_t action) const {
   return m_values[action];
 }
 
-Action NArmedBandit::best_action() const { return m_best_action; }
+NArmedBandit::Action NArmedBandit::best_action() const { return m_best_action; }

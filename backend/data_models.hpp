@@ -1,33 +1,50 @@
 #ifndef DATA_MODELS_H_
 #define DATA_MODELS_H_
 
-#include "data_models_helpers.hpp"
-#include <set>
+//#include <concepts>
+#include "../environments/multiarmed_bandits/multiarmed_bandits.h"
+#include <nlohmann/json.hpp>
+//#include "data_models_helpers.hpp"
+//#include <boost/json.hpp>
+//#include <set>
 #include <string>
-#include <tuple>
-#include <unordered_map>
-#include <variant>
+
+//#include <tuple>
+//#include <unordered_map>
 
 template <typename E, typename I = std::underlying_type_t<E>> I to_int(E e) {
-  return static_cast<I>(e);
+    return static_cast<I>(e);
 }
 
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(NArmedBandit::Action, idx);
+
 namespace data {
+
+enum Category { Model, Policy, Null = -1 };
+
+NLOHMANN_JSON_SERIALIZE_ENUM(Category, {
+                                           {  Null, "nullptr"},
+                                           { Model,   "model"},
+                                           {Policy,  "policy"},
+})
 
 //////////////////////////////
 // Description of models
 //////////////////////////////
 namespace model {
 
-enum names { mab = 1 };
+enum Name { N_Mab, N_Null = -1 };
 
-BOOST_DESCRIBE_ENUM(names, mab);
+NLOHMANN_JSON_SERIALIZE_ENUM(Name, {
+                                       {N_Null, "nullptr"},
+                                       { N_Mab,     "mab"},
+})
 
 struct mab_t {
-  int numberOfArms;
+    int numberOfArms;
 };
 
-BOOST_DESCRIBE_STRUCT(mab_t, (), (numberOfArms));
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(mab_t, numberOfArms);
 
 } // namespace model
 
@@ -36,16 +53,24 @@ BOOST_DESCRIBE_STRUCT(mab_t, (), (numberOfArms));
 //////////////////////////////
 namespace policy {
 
+enum Name { N_EpsilonGreedy, N_Ucb, N_Null = -1 };
+
+NLOHMANN_JSON_SERIALIZE_ENUM(Name, {
+                                       {         N_Null,       "nullptr"},
+                                       {N_EpsilonGreedy, "epsilonGreedy"},
+                                       {          N_Ucb,           "ucb"},
+})
+
 struct epsilon_greedy_t {
-  double epsilon;
+    double epsilon;
 };
 
 struct ucb_t {
-  double exploration;
+    double exploration;
 };
 
-BOOST_DESCRIBE_STRUCT(epsilon_greedy_t, (), (epsilon));
-BOOST_DESCRIBE_STRUCT(ucb_t, (), (exploration));
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(epsilon_greedy_t, epsilon);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ucb_t, exploration);
 
 } // namespace policy
 
@@ -53,40 +78,28 @@ BOOST_DESCRIBE_STRUCT(ucb_t, (), (exploration));
 // Description of request info
 //////////////////////////////
 struct parameters_t {
-  int numberOfSteps;
+    int numberOfSteps;
 };
 
-BOOST_DESCRIBE_STRUCT(parameters_t, (), (numberOfSteps));
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(parameters_t, numberOfSteps);
 
-using model_t = std::variant<model::mab_t>;
-using policy_t = std::variant<policy::epsilon_greedy_t, policy::ucb_t>;
+/////////////////////////////////
+// Description of response type
+/////////////////////////////////
+template <typename A> struct sample_result_t {
+    std::string action;
+    double value{};
 
-struct data_request_t {
-  model_t model;
-  policy_t policy;
-  parameters_t parameters;
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(sample_result_t<A>, action, value);
 };
 
-struct test_request_t {
-  std::string test;
-};
+template <typename A> using result_t = std::vector<sample_result_t<A>>;
 
-struct request_t {
-  std::variant<data_request_t, test_request_t> request;
-};
-
-BOOST_DESCRIBE_STRUCT(data_request_t, (), (model, policy, parameters));
-BOOST_DESCRIBE_STRUCT(test_request_t, (), (test));
-BOOST_DESCRIBE_STRUCT(request_t, (), (request));
 } // namespace data
 
-/**
- * Usage:
- *
- * boost::json::value jv{{"numberOfArms", 10}};
- * auto mab = boost::json::value_to<data::model::mab_t>(jv);
- *
- * etc...
- */
+template <typename A>
+data::sample_result_t<A> wrap_sample(const A& a, double v) {
+    return {a.to_string(), v};
+}
 
 #endif // DATA_MODELS_H_
