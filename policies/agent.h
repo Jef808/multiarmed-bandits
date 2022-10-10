@@ -1,126 +1,107 @@
 #ifndef AGENT_H_
 #define AGENT_H_
 
-#include "../environments/multiarmed_bandits/multiarmed_bandits.h"
-#include "extactions.h"
-#include "policy_random.h"
-
 #include <algorithm>
 #include <cassert>
-#include <numeric>
 #include <random>
-#include <utility>
 
-template <typename Model = NArmedBandit, typename Policy = Policy_Random>
-class Agent {
-  using Action = typename Model::Action;
-  using ExtAction = ExtActionT<Action>;
+#include "policies/extactions.h"
 
-public:
-  using model_t = Model;
-  using policy_t = Policy;
+template <typename Model, typename Policy> class Agent {
+  public:
+    Agent(Model&& model, Policy&& policy)
+        : model_{std::move(model)}
+        , policy_{std::move(policy)} {
+        reset();
+    }
 
-  Agent(Model &bandit, Policy &policy);
+    /**
+     * Sample the model according to the policy's current state.
+     */
+    std::pair<typename Model::Action, double> sample();
 
-  std::pair<Action, double> sample();
+    /**
+     * View the agent's current data on each actions.
+     */
+    const std::vector<ExtAction<typename Model::Action>>&
+        current_actions_info() const {
+        return actions_data;
+    }
 
-  /**
-   * Update the agent's statistics after a
-   * newly sampled action.
-   */
-  void update_stats(const Action &action, double reward);
+    /**
+     * To access the agent's policy (for logging/debugging).
+     */
+    const Policy& policy() { return policy_; }
 
-  /**
-   * Resets the agent's data with small gaussian noise as values.
-   */
-  void reset();
+    void seed_model() { model_.seed(rd()); }
 
-  /**
-   * To view the running stats for each actions.
-   */
-  const std::vector<double> &get_action_values() const;
-  const std::vector<double> &get_action_policy_values() const;
-  const std::vector<double> &get_action_visits() const;
+    void seed_policy() { policy_.seed(rd()); }
 
-private:
-  Model &m_bandit;
-  std::vector<ExtAction> m_actions;
-  Policy m_policy;
+    /**
+     * Resets the agent's data with small gaussian noise as values.
+     *
+     * TODO: Allow generic models (currently asssumes model is MultiArmedBandit)
+     */
+    void reset();
 
-  mutable std::vector<double> m_visits_buffer;
-  mutable std::vector<double> m_values_buffer;
-  mutable std::vector<double> m_pvalues_buffer;
+  private:
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+
+    // The model the agent is operating on.
+    mutable Model model_;
+
+    // The policy the agent is following.
+    // Specified mutable because it uses RNG which has state
+    mutable Policy policy_;
+
+    // Storage for the agent's accumulated knowledge.
+    std::vector<ExtAction<typename Model::Action>> actions_data;
+
+    /**
+     * Update the agent's statistics after a
+     * newly sampled action.
+     */
+    void update_stats(const typename Model::Action& action, double reward);
 };
 
 template <typename Model, typename Policy>
-inline Agent<Model, Policy>::Agent(Model &bandit, Policy &policy)
-    : m_bandit{bandit}, m_actions{}, m_policy{policy} {
-  reset();
+inline std::pair<typename Model::Action, double>
+    Agent<Model, Policy>::sample() {
+    typename Model::Action action = policy_(actions_data);
+
+    double reward = model_.get_reward(action);
+    update_stats(action, reward);
+
+    return std::make_pair(action, reward);
 }
 
 template <typename Model, typename Policy>
-std::pair<typename Model::Action, double> Agent<Model, Policy>::sample() {
-  typename Model::Action action = m_policy(m_actions);
-  double reward = m_bandit.get_reward(action);
+inline void
+    Agent<Model, Policy>::update_stats(const typename Model::Action& action,
+                                       double reward) {
+    auto it = std::find(actions_data.begin(), actions_data.end(), action);
+    assert(it != actions_data.end());
 
-  update_stats(action, reward);
-
-  return std::make_pair(action, reward);
+    it->visits += 1;
+    it->total += reward;
 }
 
 template <typename Model, typename Policy>
-void Agent<Model, Policy>::update_stats(const typename Model::Action &action,
-                                        double reward) {
-  auto it = std::find(m_actions.begin(), m_actions.end(), action);
-  assert(it != m_actions.end());
+inline void Agent<Model, Policy>::reset() {
+    actions_data.clear();
+    gen.seed(rd());
+    model_.reset();
 
-  it->visits += 1;
-  it->total += reward;
-}
-
-template <typename Model, typename Policy> void Agent<Model, Policy>::reset() {
-  m_actions.clear();
-
-  std::random_device rd;
-  std::mt19937 gen{rd()};
-  std::normal_distribution<> dist(0.0, 0.01);
-
-  std::generate_n(std::back_inserter(m_actions), m_bandit.number_of_actions(),
-                  [n = 0, &gen, &dist]() mutable {
-                    ExtAction ret(n++);
-                    ret.visits = 0;
-                    ret.total = dist(gen);
-                    return ret;
-                  });
-
-  m_policy.reset();
-}
-
-template <typename Model, typename Policy>
-const std::vector<double> &Agent<Model, Policy>::get_action_values() const {
-  m_values_buffer.clear();
-  std::transform(m_actions.begin(), m_actions.end(),
-                 std::back_inserter(m_values_buffer), [](const auto &ea) {
-                   return ea.visits == 0 ? ea.total : ea.total / ea.visits;
-                 });
-  return m_values_buffer;
-}
-
-template <typename Model, typename Policy>
-const std::vector<double> &Agent<Model, Policy>::get_action_visits() const {
-  m_visits_buffer.clear();
-  std::transform(m_actions.begin(), m_actions.end(),
-                 std::back_inserter(m_visits_buffer),
-                 [](const auto &ea) { return ea.visits; });
-  return m_visits_buffer;
-}
-
-template <typename Model, typename Policy>
-const std::vector<double> &
-Agent<Model, Policy>::get_action_policy_values() const {
-  m_pvalues_buffer.clear();
-  m_policy.get_action_values(m_actions, m_pvalues_buffer);
-  return m_pvalues_buffer;
+    std::generate_n(std::back_inserter(actions_data),
+                    model_.number_of_actions(),
+                    [dist = std::normal_distribution<>(0.0, 0.1), n = 0,
+                     &g = gen]() mutable {
+                        ExtAction<typename Model::Action> ret(n++);
+                        ret.visits = 0;
+                        ret.total = dist(g);
+                        return ret;
+                    });
 }
 
 #endif // AGENT_H_

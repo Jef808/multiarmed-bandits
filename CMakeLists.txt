@@ -13,6 +13,8 @@ include(Catch2)
 find_package(Catch2 REQUIRED)
 enable_testing()
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 add_subdirectory(backend)
 
 if (${mabviz_BUILD_ENVIRONMENTS})

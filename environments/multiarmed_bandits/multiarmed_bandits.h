@@ -5,13 +5,13 @@
 #include <random>
 #include <vector>
 
-struct Action {
-    size_t idx;
+// struct Action {
+//     size_t idx;
 
-    bool operator==(const Action& other) const { return idx == other.idx; }
-};
+// bool operator==(const Action& other) const { return idx == other.idx; }
+// };
 
-class NArmedBandit {
+class MultiArmedBandit {
   public:
     struct Action {
         size_t idx;
@@ -23,11 +23,16 @@ class NArmedBandit {
         }
     };
 
+    MultiArmedBandit() = default;
+
     /**
      * @Param number_of_actions  The number of available
      * actions to choose from.
      */
-    explicit NArmedBandit(size_t number_of_actions);
+    explicit MultiArmedBandit(size_t number_of_actions,
+                              uint32_t seed = std::random_device{}());
+
+    void seed(uint32_t seed) { m_gen.seed(seed); }
 
     /**
      * Generate random values for the expectation
@@ -39,7 +44,7 @@ class NArmedBandit {
     /**
      * The (fixed) number of available actions at any time.
      */
-    size_t number_of_actions() const { return N; }
+    [[nodiscard]] size_t number_of_actions() const { return N; }
 
     /**
      * Get the reward for choosing a given action.
@@ -48,41 +53,27 @@ class NArmedBandit {
      * expected value by random gaussian noise of mean
      * 0 and variance 1.
      */
-    double get_reward(const Action& action);
+    [[nodiscard]] double get_reward(const Action& action);
 
     /**
      * View the real expected reward for the given action.
      */
-    double expectation(const Action& action) const;
-
-    /**
-     * View the real expected reward for the given action.
-     */
-    double expectation(size_t action) const;
-
-    /**
-     * Get the action with highest expectation.
-     */
-    Action best_action() const;
+    [[nodiscard]] double expectation(const Action& action) const;
 
     /**
      * Compare the actions' expected values.
      */
-    bool operator==(const NArmedBandit& other) const;
+    bool operator==(const MultiArmedBandit& other) const;
 
   private:
     /* The number of actions. */
-    size_t N;
+    size_t N{0};
     /* The expected values of the actions. */
     std::vector<double> m_values;
-    /* Used to obtain random seeds when resetting. */
-    std::random_device m_rd;
     /* Generator for obtaining the needed random values. */
-    std::mt19937 m_gen{m_rd()};
-    /* The normal distribution which shapes the random values. */
-    std::normal_distribution<> m_dist;
-    /* The action with the highest expectation. */
-    Action m_best_action;
+    std::mt19937 m_gen;
+    /* Distribution to generate noise in samples. */
+    std::normal_distribution<> m_dist{0, 1};
 };
 
 #endif // MULTIARMED_BANDITS_H_

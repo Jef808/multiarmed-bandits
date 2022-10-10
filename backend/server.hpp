@@ -3,10 +3,11 @@
 
 #include <condition_variable>
 #include <iosfwd>
-#include <memory>
 #include <mutex>
 #include <thread>
 #include <zmq.hpp>
+
+#include "nl_handler.h"
 
 extern zmq::context_t context_g;
 
@@ -34,8 +35,8 @@ class server_t {
     std::condition_variable cv_;
     std::mutex m_;
     std::mutex m_end_;
-
-    std::string process_request(const std::string& req) noexcept;
+    request_handler_t request_handler;
+    // std::string process_request(const std::string& req) noexcept;
 
     friend std::ostream& operator<<(std::ostream& os, const server_t& server);
 };

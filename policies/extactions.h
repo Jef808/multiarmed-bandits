@@ -4,22 +4,23 @@
 #include <cstddef>
 
 /**
- * Structure to accumulate data along the search.
+ * Structure wrapping actions with additional data.
  */
-template <typename Action> struct ExtActionT {
-  explicit ExtActionT(size_t idx) : action{idx} {}
+template <typename Action> struct ExtAction {
+    explicit ExtAction(size_t idx)
+        : action{idx} { }
 
-  Action action;
-  int visits{0};
-  double total{0.0};
+    // The data to attach to actions during a search.
+    Action action;
+    int visits{0};
+    double total{0.0};
 
-  operator Action() const { return action; }
-  bool operator==(const Action &a) const;
+    operator Action() const { return action; }
+
+    /**
+     * In order e.g. to use `std::find()` on ExtActions
+     */
+    bool operator==(const Action& a) const { return this->action == action; }
 };
-
-template <typename Action>
-bool ExtActionT<Action>::operator==(const Action &action) const {
-  return this->action == action;
-}
 
 #endif // EXTACTIONS_H_

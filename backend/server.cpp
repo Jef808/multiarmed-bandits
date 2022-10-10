@@ -1,5 +1,6 @@
-#include "nl_handler.h"
+
 #include "server.hpp"
+#include "nl_handler.h"
 #include "zhelpers.hpp"
 
 #include <nlohmann/json.hpp>
@@ -56,13 +57,13 @@ void server_t::init() noexcept {
              std::unique_lock<std::mutex> lock(m_);
              cv_.wait(lock, [this] { return request_waiting_; });
 
-             nlohmann::json req = nlohmann::json::parse(s_recv(*socket_));
+             std::string req = s_recv(*socket_);
 
              std::cerr << "server: received" << req << std::endl;
 
-             nlohmann::json rep;
-             handle_request(req, rep);
-             s_send(*socket_, rep.dump(4));
+             // zmq::message_t rep{};
+             socket_->send(zmq::buffer(request_handler(req)),
+                           zmq::send_flags::none);
 
              request_waiting_ = false;
          }

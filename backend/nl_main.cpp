@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
     client.connect("tcp://localhost:5555");
 
     json req =
-        R"({"model":{"name":"mab","parameters":{"numberOfArms": 10}},"policy":{"name":"ucb","parameters":{"exploration":0.7}},"parameters":{"numberOfSteps":1000}})"_json;
+        R"({"model":{"name":"mab","parameters":{"numberOfArms": 10}},"policy":{"name":"epsilonGreedy","parameters":{"epsilon":0.1}},"parameters":{"numberOfSteps":1000}})"_json;
 
     s_send(client, req.dump());
     std::cout << "Request: " << req.dump(4) << std::endl;
