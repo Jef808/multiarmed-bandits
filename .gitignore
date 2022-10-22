@@ -13,3 +13,12 @@ yarn-error.log*
 .eslintcache
 */**/dist*
 */**/package-lock.json
+
+**/.scratch
+**/scraps/
+**/notes/
+**/build/
+**/build/
+package-lock.json
+**/*.save
+.cache
