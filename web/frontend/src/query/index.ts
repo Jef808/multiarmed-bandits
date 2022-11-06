@@ -1,6 +1,6 @@
 import { withDefaultParams } from '@/utils'
 
-export var queryOptions = [
+export const queryOptions = [
     withDefaultParams({
         name: "numberOfSteps",
         label: "Number of Steps",

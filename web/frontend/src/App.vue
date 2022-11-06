@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  reactive,
   ref,
   type Ref,
   toRefs,
@@ -13,70 +14,72 @@ import { policies } from "@/policies";
 import { queryOptions } from "@/query";
 import InputParameter from "@/components/InputParameter.vue";
 
-const selectedModel = ref(models[0]);
-const selectedPolicy = ref(policies[0]);
+const selectedModel = ref(models[0].label);
+const selectedPolicy = ref(policies[0].label);
+const options = ref(queryOptions);
 
-function onUpdate(name: string, newValue: number) {
-  if (name.startsWith("option-")) {
-    let toUpdate = options.find((opt) => name.endsWith(opt.value.name));
-    if (toUpdate !== undefined) {
-      toUpdate.value.modelValue = newValue;
-    }
-  } else if (name.startsWith("policy-")) {
-    let toUpdate = selectedPolicy.value.parameters.find((param) =>
-      name.endsWith(param.name)
-    );
-    if (toUpdate !== undefined && toUpdate.modelValue !== undefined) {
-      toUpdate.modelValue = newValue;
-    }
-  } else if (name.startsWith("model-")) {
-    let toUpdate = selectedModel.value.parameters.find((param) =>
-      name.endsWith(param.name)
-    );
-    if (toUpdate !== undefined && toUpdate.modelValue !== undefined) {
-      toUpdate.modelValue = newValue;
-    }
+const selectedModelParameters = computed(() => {
+  let model = models.find((m) => m.label === selectedModel.value);
+  if (model !== undefined) {
+    return model.parameters;
   }
-}
+});
+const selectedPolicyParameters = computed(() => {
+  let policy = policies.find((p) => p.label === selectedPolicy.value);
+  if (policy !== undefined) {
+    return policy.parameters;
+  }
+});
 
 function onSubmit() {}
 </script>
 
 <template>
   <form @submit.prevent="onSubmit">
-    <div>
-      <h2>
-        <label for="select-model">Model</label>
-      </h2>
-      <select id="select-model" v-model="selectedModel">
-        <option disabled value="">Select Model</option>
-        <option v-for="model in models" :key="model.name">
-          {{ model.label }}
-        </option>
-      </select>
-    </div>
-    <div>
-      <h2>
-        <label for="select-model">Policy</label>
-      </h2>
-      <select id="select-model" v-model="selectedPolicy">
-        <option disabled value="">Select Policy</option>
-        <option v-for="policy in policies" :key="policy.name">
-          {{ policy.label }}
-        </option>
-      </select>
-    </div>
-    <div>
-      <h2>Options</h2>
-      <InputParameter
-        v-for="option in queryOptions"
-        :key="option.name"
-        v-bind="option"
-        @update="onUpdate"
-      />
-    </div>
-    <div>
-      <button type="submit">Submit</button>
+    <div class="header">
+      <div class="container">
+        <h2>
+          <label for="select-model">Model</label>
+        </h2>
+        <select id="select-model" v-model="selectedModel">
+          <option disabled value="">Select Model</option>
+          <option v-for="model in models" :key="model.name">
+            {{ model.label }}
+          </option>
+        </select>
+        <InputParameter
+          v-for="param in selectedModelParameters"
+          :key="param.name"
+          v-bind="param"
+        />
+      </div>
+      <div class="container">
+        <h2>
+          <label for="select-policy">Policy</label>
+        </h2>
+        <select id="select-policy" v-model="selectedPolicy">
+          <option disabled value="">Select Policy</option>
+          <option v-for="policy in policies" :key="policy.name">
+            {{ policy.label }}
+          </option>
+        </select>
+        <InputParameter
+          v-for="param in selectedPolicyParameters"
+          :key="param.name"
+          v-bind="param"
+        />
+      </div>
+      <div class="container">
+        <h2>Options</h2>
+        <InputParameter
+          v-for="option in options"
+          :key="option.name"
+          v-bind="option"
+        />
+      </div>
+      <div>
+        <button type="submit">Submit</button>
+      </div>
     </div>
   </form>
 </template>
