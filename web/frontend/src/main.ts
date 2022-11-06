@@ -1,13 +1,10 @@
 import { createApp } from "vue";
-import "./assets/reset.css";
-import "./style.css";
+import { createPinia } from "pinia";
 import App from "./App.vue";
-
-//import "vue-select/dist/vue-select.css";
-//import VueNumberInput from "@chenfengyuan/vue-number-input";
+import "./assets/main.css";
 
 const app = createApp(App);
 
-//app.component('vue-number-input', VueNumberInput);
+app.use(createPinia());
 
 app.mount("#app");
