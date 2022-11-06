@@ -11,30 +11,16 @@ import uniqueId from "lodash.uniqueid";
 import { models } from "@/models";
 import { policies } from "@/policies";
 import { queryOptions } from "@/query";
-import { asParameterWithDefaults, withDefaultParameters } from "@/utils";
 import InputParameter from "@/components/InputParameter.vue";
 
-const selectedModel = ref(withDefaultParameters(models[0]));
-const selectedPolicy = ref(withDefaultParameters(policies[0]));
-const options = ref(
-  queryOptions.map((opt) => makeParameterProps(opt, "option-"))
-);
-
-function makeParameterProps<T extends { name: string }>(
-  parameter: T,
-  idPrefix: string
-) {
-  return {
-    ...asParameterWithDefaults(parameter),
-    ...{ name: `${idPrefix}-${parameter.name}` },
-  };
-}
+const selectedModel = ref(models[0]);
+const selectedPolicy = ref(policies[0]);
 
 function onUpdate(name: string, newValue: number) {
   if (name.startsWith("option-")) {
-    let toUpdate = options.value.find((opt) => name.endsWith(opt.name));
+    let toUpdate = options.find((opt) => name.endsWith(opt.value.name));
     if (toUpdate !== undefined) {
-      toUpdate.modelValue = newValue;
+      toUpdate.value.modelValue = newValue;
     }
   } else if (name.startsWith("policy-")) {
     let toUpdate = selectedPolicy.value.parameters.find((param) =>
@@ -83,9 +69,9 @@ function onSubmit() {}
     <div>
       <h2>Options</h2>
       <InputParameter
-        v-for="option in options"
+        v-for="option in queryOptions"
         :key="option.name"
-        v-bind="makeParameterProps(option, 'option-')"
+        v-bind="option"
         @update="onUpdate"
       />
     </div>

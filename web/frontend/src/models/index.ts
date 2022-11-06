@@ -1,5 +1,7 @@
+import { withDefaultParameters } from '@/utils'
+
 export var models = [
-    {
+    withDefaultParameters({
         name: "mab",
         label: "Multiarmed Bandits",
         parameters: [
@@ -8,9 +10,7 @@ export var models = [
                 label: "Number of Arms",
                 modelValue: 2,
                 min: 2,
-                max: Infinity,
-                sliderStep: 1,
             },
         ],
-    },
+    }),
 ];

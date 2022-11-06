@@ -4,11 +4,11 @@ const ParameterArgsDefaults = {
   sliderStep: 1,
 };
 
-export function asParameterWithDefaults<T extends object>(parameter: T) {
-  return { ...ParameterArgsDefaults, ...parameter };
+export const withDefaultParams = (p: any) => {
+  return { ...ParameterArgsDefaults, ...p }
 }
 
-export function withDefaultParameters<T extends { parameters: object[] }>(entity: T) {
-  entity.parameters = entity.parameters.map(p => asParameterWithDefaults(p))
-  return entity
+export function withDefaultParameters<T extends { parameters: object[] }>(e: T) {
+  e.parameters = e.parameters.map(p => withDefaultParams(p));
+  return e;
 }

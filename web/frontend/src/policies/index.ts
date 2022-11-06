@@ -1,5 +1,7 @@
+import { withDefaultParameters } from '@/utils'
+
 export var policies = [
-    {
+    withDefaultParameters({
         name: "epsilonGreedy",
         label: "Epsilon Greedy",
         parameters: [
@@ -12,8 +14,8 @@ export var policies = [
                 sliderStep: 0.05,
             },
         ],
-    },
-    {
+    }),
+    withDefaultParameters({
         name: "ucb",
         label: "Upper Confidence Bound",
         parameters: [
@@ -22,9 +24,8 @@ export var policies = [
                 label: "Exploration Constant",
                 modelValue: 0.7,
                 min: 0.0,
-                max: Infinity,
                 sliderStep: 0.05,
             },
         ],
-    },
+    }),
 ];
