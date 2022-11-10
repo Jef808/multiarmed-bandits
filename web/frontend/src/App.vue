@@ -1,98 +1,162 @@
 <script setup lang="ts">
 import {
-  reactive,
   ref,
-  type Ref,
+  toRef,
   toRefs,
+  toRaw,
   computed,
   onRenderTracked,
   onRenderTriggered,
+  onBeforeMount,
+  onMounted,
 } from "vue";
-import uniqueId from "lodash.uniqueid";
-import { models } from "@/models";
-import { policies } from "@/policies";
-import { queryOptions } from "@/query";
-import InputParameter from "@/components/InputParameter.vue";
+import { storeToRefs } from "pinia";
+import type { Model, Policy, QueryOption, NamedParameter, List } from "@/types";
+import { useModelStore } from "@/stores/models";
+import { usePolicyStore } from "@/stores/policies";
+import { useQueryStore } from "@/stores/query";
+// import { useStore } from "@/stores/store";
+import FormSection from "@/components/FormSection.vue";
 
-const selectedModel = ref(models[0].label);
-const selectedPolicy = ref(policies[0].label);
-const options = ref(queryOptions);
+const { models, selectedModel, modelLoading } = storeToRefs(useModelStore());
+const { fetchModels, addModelDocument } = useModelStore();
 
-const selectedModelParameters = computed(() => {
-  let model = models.find((m) => m.label === selectedModel.value);
-  if (model !== undefined) {
-    return model.parameters;
-  }
+const { policies, selectedPolicy, policyLoading } = storeToRefs(
+  usePolicyStore()
+);
+const { fetchPolicies, addPolicyDocument } = usePolicyStore();
+
+const { queryOptions } = storeToRefs(useQueryStore());
+
+// const selectedModel = toRef(models.value, "0");
+// const selectedPolicy = toRef(policies.value, "0");
+
+onBeforeMount(() => {
+  fetchModels();
+
+  addModelDocument({
+    name: "mab",
+    label: "Multiarmed Bandit",
+    parameters: [
+      {
+        name: "numberOfArms",
+        label: "Number of Arms",
+        value: 2,
+        min: 2,
+      },
+    ],
+  });
+
+  addPolicyDocument({
+    name: "epsilonGreedy",
+    label: "Epsilon Greedy",
+    parameters: [
+      {
+        name: "epsilon",
+        label: "Epsilon",
+        value: 0.1,
+        min: 0,
+        max: 1,
+        step: 0.05,
+      },
+    ],
+  });
+
+  addPolicyDocument({
+    name: "ucb",
+    label: "Upper Confidence Bound",
+    parameters: [
+      {
+        name: "exploration",
+        label: "Exploration Constant",
+        value: 0.7,
+        min: 0,
+        step: 0.05,
+      },
+    ],
+  });
+
+  fetchModels();
+  // console.log("%cBefore Mount", "font-size:18px");
+  // console.log("Models:", models.value);
+  // console.log("Policies:", policies.value);
+  // console.log("Options:", queryOptions.value);
+  // console.log("Selected Model:", selectedModel);
+  // console.log("Selected Policy:", selectedPolicy);
 });
-const selectedPolicyParameters = computed(() => {
-  let policy = policies.find((p) => p.label === selectedPolicy.value);
-  if (policy !== undefined) {
-    return policy.parameters;
-  }
-});
 
-function onSubmit() {}
+onMounted(() => {
+  // console.log("%cMounted", "font-size:18px");
+  // console.log("Models:", JSON.stringify(models.value, null, 2));
+  // console.log("Policies:", JSON.stringify(policies.value, null, 2));
+  // console.log("Options:", JSON.stringify(queryOptions.value, null, 2));
+  //
+  // console.log("Selected Model:", JSON.stringify(selectedModel.value, null, 2));
+  // console.log(
+  //   "Selected Policy:",
+  //   JSON.stringify(selectedPolicy.value, null, 2)
+  // );
+});
 </script>
 
 <template>
-  <form @submit.prevent="onSubmit">
-    <div class="header">
-      <div class="container">
-        <h2>
-          <label for="select-model">Model</label>
-        </h2>
-        <select id="select-model" v-model="selectedModel">
-          <option disabled value="">Select Model</option>
-          <option v-for="model in models" :key="model.name">
-            {{ model.label }}
-          </option>
-        </select>
-        <InputParameter
-          v-for="param in selectedModelParameters"
-          :key="param.name"
-          v-bind="param"
-        />
+  <v-app id="app">
+    <v-main class="bg-grey-lighten-3">
+      <div class="d-flex align-center flex-column">
+        <div class="text-subtitle-2">Model</div>
+        <v-card width="400">
+          <template v-slot:title> MODEL </template>
+          <template v-slot:subtitle>
+            <v-select
+              v-model="selectedModel"
+              :items="models.value"
+              item-title="label"
+              item-value="parameters"
+              label="Select Model"
+              persistent-hint
+              return-object
+            >
+              <!-- <template v-slot:selection="{ item }">
+                   <span>{{ item.label }}</span>
+                   </template> -->
+            </v-select>
+          </template>
+          <template v-slot:text> ParameterList... </template>
+        </v-card>
       </div>
-      <div class="container">
-        <h2>
-          <label for="select-policy">Policy</label>
-        </h2>
-        <select id="select-policy" v-model="selectedPolicy">
-          <option disabled value="">Select Policy</option>
-          <option v-for="policy in policies" :key="policy.name">
-            {{ policy.label }}
-          </option>
-        </select>
-        <InputParameter
-          v-for="param in selectedPolicyParameters"
-          :key="param.name"
-          v-bind="param"
-        />
+      <div class="d-flex align-center flex-column">
+        <div class="text-subtitle-2">Policy</div>
+        <v-card>
+          <template v-slot:title> POLICY </template>
+          <template v-slot:subtitle>
+            <v-select
+              v-model="selectedPolicy"
+              :items="policies.value"
+              item-title="label"
+              item-value="parameters"
+              label="Select Policy"
+              persistent-hint
+              return-object
+            >
+              <!-- <template v-slot:selection="{ item }">
+                     <span>{{ item.label }}</span>
+                     </template> -->
+            </v-select>
+          </template>
+          <template v-slot:text> ParameterList... </template>
+        </v-card>
       </div>
-      <div class="container">
-        <h2>Options</h2>
-        <InputParameter
-          v-for="option in options"
-          :key="option.name"
-          v-bind="option"
-        />
-      </div>
-      <div>
-        <button type="submit">Submit</button>
-      </div>
-    </div>
-  </form>
+      <!-- <v-form>
+           <v-container>
+           <v-row>
+           <v-col cols="12" md="4">
+           <div>
+           <v-select v-bind="models"></v-select>
+           </div>
+           </v-col>
+           </v-row>
+           </v-container>
+           </v-form> -->
+    </v-main>
+  </v-app>
 </template>
-
-<style>
-.visually-hidden {
-  position: absolute;
-  height: 1px;
-  width: 1px;
-  overflow: hidden;
-  clip: rect(1px 1px 1px 1px);
-  clip: rect(1px, 1px, 1px, 1px);
-  clip-path: rect(1px, 1px, 1px, 1px);
-  white-space: nowrap;
-}
-</style>

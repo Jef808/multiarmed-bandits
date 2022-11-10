@@ -1,11 +1,12 @@
 {
   "extends": "@vue/tsconfig/tsconfig.web.json",
   "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
+  "moduleResolution": "node",
   "compilerOptions": {
-    "lib": ["esnext"],
-    "baseUrl": ".",
+    "lib": ["esnext", "dom", "dom.iterable", "scripthost"],
+    "baseUrl": "./",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["src/*"]
     },
     "typeRoots": ["./node_modules/@types"],
     "forceConsistentCasingInFileNames": true
