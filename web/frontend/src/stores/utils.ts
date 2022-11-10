@@ -1,8 +1,9 @@
 import uniqueId from "lodash.uniqueid";
-import type { Store } from "pinia";
-import { writeBatch, setDoc, doc } from 'firebase/firestore';
+import type { Ref } from 'vue'
+import { type FirestoreDataConverter, Query, getDocs, type DocumentChange, type SetOptions, writeBatch, setDoc, doc, type QueryDocumentSnapshot, type SnapshotOptions, type DocumentData } from 'firebase/firestore';
 import { db } from '@/plugins/firebase';
-import type { Model, ModelProps, Policy, PolicyProps, List } from '@/types'
+import type { Model, ModelProps, Policy, PolicyProps } from '@/types'
+import collect from 'collect.js'
 
 export type ParameterProps = {
   name: string;
@@ -39,25 +40,40 @@ export function defineItem(name: string, label: string, params: ParameterProps[]
   } as Model | Policy;
 }
 
+export const modelPolicyConverter = {
+
+  toFireStore(item: Partial<Model | Policy>, options: SetOptions) {
+    if (!!item.name && !!item.label && !!item.parameters)
+      return {
+        name: item.name,
+        label: item.label,
+        parameters: item.parameters
+      } as DocumentData;
+  },
+  fromFireStore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Model | Policy {
+    const { name, label, parameters } = snapshot.data(options)!;
+    return { name, label, parameters };
+  }
+} as unknown as FirestoreDataConverter<Model | Policy>;
+
 export function defineQueryOptions(params: ParameterProps[]) {
   return params.map((param) => defineParameter(param));
 }
 
-export function getItem(store: Store, id: string) { }
-
 export async function addDocument(props: ModelProps | PolicyProps, collection: "models" | "policies") {
+  const batch = writeBatch(db);
+
   const docId = `${collection}-${String(props.name)}`;
-  await setDoc(doc(db, 'models', docId), {
+  const docRef = doc(db, collection, docId);
+  batch.set(docRef, {
     name: props.name,
     label: props.label
   });
-  console.log("New document written with ID: ", docId);
-
-  const batch = writeBatch(db);
 
   props.parameters.forEach((param, idx) => {
     const paramId = `${collection}-${String(props.name)}-param-${idx}`;
     const paramDocRef = doc(db, "category", docId, "parameters", paramId);
+
     batch.set(paramDocRef, {
       name: param.name,
       label: param.label,
@@ -69,5 +85,16 @@ export async function addDocument(props: ModelProps | PolicyProps, collection: "
   });
 
   await batch.commit();
+
+  console.log("New document written at path", `${collection}/${docId}`);
   console.log("Added the 'parameters' collection to policy ", docId);
+}
+
+export async function pullDataInto(q: Query, target: Ref<Model[] | Policy[]>) {
+  const querySnapshot = await getDocs(q.withConverter(modelPolicyConverter));
+
+  collect(querySnapshot
+    .docChanges())
+    .map((item: DocumentChange) => item.doc.data())
+    .merge(target.value);
 }

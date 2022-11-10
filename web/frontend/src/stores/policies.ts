@@ -6,8 +6,11 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/plugins/firebase'
 
 export const usePolicyStore = defineStore('policies', () => {
+
   const policies = ref([{ name: "", label: "", parameters: [] }] as Policy[]);
+
   let policy: Ref<Policy> | undefined = undefined;
+
   const selectedPolicy = computed({
     get() {
       if (policy === undefined) return undefined;
@@ -21,7 +24,8 @@ export const usePolicyStore = defineStore('policies', () => {
   })
   const policyLoading = ref(false)
 
-  async function fetchModels() {
+
+  async function fetchPolicies() {
     policyLoading.value = true
     policies.value = []
 
@@ -50,5 +54,5 @@ export const usePolicyStore = defineStore('policies', () => {
     policy = toRef(policies.value, policies.value.findIndex((e) => e.name === name))
   }
 
-  return { policies, selectedPolicy, policyLoading, fetchModels, addPolicyDocument, selectPolicy }
+  return { policies, selectedPolicy, policyLoading, fetchPolicies, addPolicyDocument, selectPolicy }
 });

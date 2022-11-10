@@ -1,13 +1,19 @@
 import type { Model, ModelProps } from '@/types'
 import { computed, ref, toRef, type Ref } from "vue";
-import { addDocument } from "@/stores/utils";
+import { pullDataInto, addDocument, modelPolicyConverter } from "@/stores/utils";
 import { defineStore } from "pinia";
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, QueryDocumentSnapshot, type SnapshotOptions, type DocumentData, type DocumentChange, type DocumentReference, type Query } from 'firebase/firestore';
 import { db } from '@/plugins/firebase'
+// import collect from 'collect.js';
+
+
 
 export const useModelStore = defineStore('models', () => {
-  const models = ref([{ name: "", label: "", parameters: [] }] as Model[]);
+
+  const models = ref([]) as Ref<Model[]>;
+
   let model: Ref<Model> | undefined = undefined;
+
   const selectedModel = computed({
     get() {
       if (model === undefined) return undefined;
@@ -21,17 +27,13 @@ export const useModelStore = defineStore('models', () => {
   })
   const modelLoading = ref(false)
 
-  async function fetchModels() {
-    modelLoading.value = true
-    models.value = []
+  async function init() {
+    modelLoading.value = true;
+    await pullDataInto(collection(db, 'models'), models)
 
-    const querySnapshot = await getDocs(collection(db, "models"));
-    querySnapshot.forEach((doc) => {
-      console.log(`${doc.id} => ${doc.data()}`);
-      console.log(JSON.stringify(doc.data()))
-    })
+    if (model === undefined)
+      selectFirstAvailable();
 
-    selectFirstAvailable();
     modelLoading.value = false;
   }
 
@@ -50,5 +52,5 @@ export const useModelStore = defineStore('models', () => {
     model = toRef(models.value, models.value.findIndex((e) => e.name === name))
   }
 
-  return { models, selectedModel, modelLoading, fetchModels, addModelDocument, selectModel }
+  return { init, models, selectedModel, modelLoading, pullDataInto, addModelDocument, selectModel }
 });

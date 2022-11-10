@@ -1,42 +1,27 @@
-import uniqueId from 'lodash.uniqueid'
+// interface PollArgs {
 
-const ParameterArgsDefaults = {
-  min: -Infinity,
-  max: Infinity,
-  sliderStep: 1,
-};
+//   validate: (r: R) => {};
+//   interval: number;
+//   maxAttempts: number;
+// }
 
-export function useDefaults<T extends object>(params: T[]) {
-  params.forEach((param) => {
-    for (const [key, value] of Object.entries(ParameterArgsDefaults)) {
-      if (!param.hasOwnProperty(key)) {
-        Object.defineProperty(param, key, {
-          value: value,
-          writable: false
-        })
-      }
+export function poll({ fn, validate, interval, maxAttempts }: { fn: () => any, validate: () => boolean, interval: number, maxAttempts: number }) {
+  let attempts = 0;
+
+  const executePoll = async (resolve: (a: any) => R, reject: (e: Error) => void) {
+    const result = await fn();
+    ++attempts;
+
+    if (validate(result)) {
+      return resolve(result);
     }
-  });
-  return params
-}
+    else if (maxAttempts && attempts === maxAttempts) {
+      return reject(new Error('Exceeded max attempts'));
+    }
+    else {
+      setTimeout(executePoll, interval, resolve, reject);
+    }
+  };
 
-export function useDefaultParameters<T extends { parameters: object[] }>(objs: T[]) {
-  objs.forEach((obj) => useDefaults(obj.parameters));
-  return objs;
-}
-
-// Add/replace each parameter's id with a unique Id with given prefix.
-export function useUniqueIds<T extends object>(params: T[], prefix: string) {
-  params.forEach((param) => {
-    Object.defineProperty(param, 'id', {
-      value: uniqueId(prefix),
-      writable: false
-    })
-  });
-  return params;
-}
-
-export function useUniqueParamsIds<T extends { parameters: object[] }>(objs: T[], prefix: string) {
-  objs.forEach((obj) => useUniqueIds(obj.parameters, prefix))
-  return objs
+  return new Promise(executePoll);
 }
