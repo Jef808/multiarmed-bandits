@@ -3,10 +3,10 @@
 * Gaussian Noise generator
 Two simple ways of generating samples from a Gaussian distribution:
 *** Box and Muller method
-#+begin_export latex
-\begin{theroem}\label{thrm:box-muller}\cite{Box1958ANO}[See also
-[[https://en.wikipedia.org/wiki/Marsaglia_polar_method][Wikipedia page]]]
-Let $u$ and $v$ be independant samples chosen from a uniform distribution on $(0, 1) \subset \mathbb{R}$.
+
+#+begin_src latex
+\begin{theroem}\label{thrm:box-muller}\cite{Box1958ANO}
+Let $u$ and $v$ be independant samples chosen from a uniform distribution on $(0, 1) \subset \mathbb{R}$ and $(R, \Theta)$ corresponding polar coordinates.
 Let
 \begin{equation}
   z_0 = R \cos (\Theta) = \sqrt{-2 \log u } \cos (2 \pi v)
@@ -16,31 +16,74 @@ and
   z_1 = R \sin (\Theta) = \sqrt{-2 \log u } \sin (2 \pi v).
 \end{equation}
 Then $z_0$ and $z_1$ are independant random variables both distributed a standard normal distribution of mean $0$ and variance $1$.
-Generate samples from a standard normal distribution with mean $\mu$ and variance $\sigma^2$ by considering the random variable $Z_{0,1} = \mu + \sigma * z_{0,1}$.
+Generate samples from a standard normal distribution with mean $\mu$ and variance $\sigma^2$ by considering the random variables $Z_{0,1} = \mu + \sigma * z_{0,1}$.
 \end{theorem}
-#+end_export
+#+end_src
+
 *** Marsaglia method
-#+begin_export latex
-\begin{theroem}\cite{MR172441}[[[https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform#cite_ref-2][Wikipedia page]]]
-Consider $\mathbb{\overline{D}} = \{ (x, y) \mid ||(x, y)||_{\text{euc} \leq 1 \}$ the closed unit disk and
-$\mathbb{Sq} = [0, 1] \times [0, 1]$.
-Let us pick $u, v$ two independant random variables with values in $\mathbb{Sq}$ which are conditioned by the constraint $u^2 + v^2 < 1$.
-Then
-\begin{equation}
-  z_0 = u * (-2 \log{ \frac{( u ^ 2 + v ^ 2 )} {(u ^ 2 + v ^ 2)} }^{1/2}
+Let us first establish the geometric picture for this result:
+Consider the open square
+#+begin_src latex
+\mathbb{Sq} = (-1, 1) \times (-1, 1)
+#+end_src
+of side length $2$ in the plane, along with its inscribed open disk
+#+begin_src latex
+\mathbb{D} = \{ (x, y) \mid x ^ 2 + y ^ 2 < 1 \}.
+#+end_src
+
+For \(u\) and \(v\) two independant random variables with values in the plane, we will denote in what follows by
+#+begin_src latex
+\begin{equation*}
+\rho = \rho(u, v) = u ^ 2 + v ^ 2
+\end{equation*}
+#+end_src
+
+#+begin_src latex
+Consider any two uniformly distributed and independant variables \(U, V\) with values in \(\mathbb{Sq}\) but constrained by the condition that $0 < \rho(U, V) < 1$ with probability $1$.
+Then with
+\begin{subequations}\begin{equation}\label{eq:z0}
+  z_0 = \frac{U}{\sqrt{ \rho }} * \sqrt{ \frac{ -2 \,\log{\rho} }{\rho} }
 \end{equation}
 and
-\begin{equation}
-  z_1 = v * (-2 \log{ \frac{( u ^ 2 + v ^ 2 )} {(u ^ 2 + v ^ 2)} }^{1/2},
-\end{equation}
-form a pair of independant random variables both distributed along a standard normal distribution of mean $0$ and variance $1$.
+\begin{equation}\label{eq:z1}
+  z_1 = \frac{V}{\sqrt{ \rho }} * \sqrt{ \frac { -2 \,\log{\rho} }{\rho} }
+\end{equation}\end{subequations}
+\begin{remark}
+Notice that
+\begin{equation*}
+  \frac{U}{\sqrt{\rho}} = \cos(\theta)
+\end{equation*}
+and similarly,
+\begin{equation*}
+  \frac{V}{\sqrt{\rho}} = \sin(\theta).
+\end{equation*}
+So by writing $R = \displaymath{\sqrt{\frac{-2 \log { \rho }}{\rho}}}$, we can write
+\begin{equation}\begin{cases}
+z_0 &= R \cos (\theta), \\
+z_1 &= R \sin (\theta).
+\end{cases}\end{equation}
+\end{remark}
+#+end_src
+
+#+begin_src latex
+\begin{theroem}[\cite{MR172441}]
+With the notation as above, $z_0$ and $z_1$ form two independant variables distributed along a standard normal distribution with mean $0$ and standard deviation $1$. By scaling them to
+\begin{equation}\begin{cases}
+Z_0 &= \mu + \sigma z_0, \\
+Z_1 &= \mu + \sigma z_1,
+\end{cases}\end{equation}
+we obtain two independant variables distributed along a normal distribution with mean $\mu$ and variance $\sigma ^ 2$.
 \end{theorem}
-#+end_export
+#+end_src
+
+*** Tailwind
 
 ** Test
 *** Box and Muller method
+
 #+begin_src python :session
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 #+end_src
@@ -69,7 +112,7 @@ assert(std_near_sigma < 0.2)
 #+RESULTS:
 
 Plot the above
-#+begin_src python :session :results file
+#+begin_src python :session :results file graphics
 fig=plt.figure(figsize=(4,2))
 count, bins, ignored = plt.hist(normal_samples, 30, ec='orange', fc='steelblue', density=True)
 plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) *
@@ -77,12 +120,12 @@ plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) *
          linewidth=2, color='violet', alpha=0.5)
 fig.tight_layout()
 fname="images/numpyExpectationsBarChart.png"
-plt.savefig(fname)
-fname
+plt.show(fname)
+#fname
 #+end_src
 
 #+RESULTS:
-[[file:]]
+[[file:images/numpyExpectationsBarChart.png]]
 
 Compare with data generated from our own gaussian sampling method:
 #+begin_src python :session
@@ -117,21 +160,7 @@ def getSample(sample_size):
 #+end_src
 #+RESULTS:
 
-Sanity checks:
-#+begin_src python :session
-# sample = getSample(number_of_samples)
-
-# mean_near_mu = abs( mu - means(my_samples) )
-# std_near_sigma = abs(sigma - np.std(my_samples, ddof=1))
-
-# assert(len(my_samples) > 0, "Nonempty samples")
-# assert(mean_near_mu < 0.2)
-# assert(sigma_near_one < 0.2)
-#+end_src
-
-#+RESULTS:
-
-#+begin_src python :session :results file
+#+begin_src python :session :results file graphics
 sample = getSample(number_of_samples)
 
 fig=plt.figure(figsize=(4,2))
@@ -141,15 +170,9 @@ plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) *
          linewidth=2, color='violet', alpha=0.5)
 fig.tight_layout()
 fname="images/expectationsBarChart.png"
-plt.savefig(fname)
+plt.show(fname)
 fname
 #+end_src
 
 #+RESULTS:
 [[file:]]
-
-*** Testing source blocks
-#+begin_src python results: output
-#+end_src
-
-#+RESULTS:

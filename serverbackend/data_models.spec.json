@@ -1,0 +1,32 @@
+[
+  {
+  "id": "query-1",
+  "model": {
+    "name": "mab",
+    "nbOfArms": 2
+  },
+  "policy": {
+    "name": "epsilonGreedy",
+    "epsilon": 0.1
+  },
+  "options": {
+    "nbOfSteps": 1,
+    "averagingWindowSize": 1
+  }
+},
+{
+  "id": "query-2",
+  "model": {
+    "name": "mab",
+    "nbOfArms": 5
+  },
+  "policy": {
+    "name": "ucb",
+    "exploration": 0.7
+  },
+  "options": {
+    "nbOfSteps": 1,
+    "averagingWindowSize": 1
+  }
+}
+]

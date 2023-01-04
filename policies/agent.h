@@ -3,29 +3,42 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 #include <random>
+#include <string>
+#include <tuple>
 
-#include "policies/extactions.h"
+#include "extactions.h"
+
+namespace policy {
+
 
 template <typename Model, typename Policy> class Agent {
   public:
-    Agent(Model&& model, Policy&& policy)
-        : model_{std::move(model)}
-        , policy_{std::move(policy)} {
+    Agent(const Model& model, const Policy& policy)
+        : model_{model}, policy_{policy} {
         reset();
     }
 
     /**
      * Sample the model according to the policy's current state.
      */
-    std::pair<typename Model::Action, double> sample();
+    std::pair<Action, double> sample();
 
     /**
-     * View the agent's current data on each actions.
+     * Sample the model `nb_samples` of times, each time choosing the
+     * action according to the updated policy.
      */
-    const std::vector<ExtAction<typename Model::Action>>&
-        current_actions_info() const {
-        return actions_data;
+    template<typename OutputIter>
+    void run(size_t nb_samples, OutputIter out);
+
+    void set_model(Model model) {
+        model_ = model;
+        reset();
+    }
+    void set_policy(Policy policy) {
+        policy_ = policy;
+        reset();
     }
 
     /**
@@ -33,9 +46,13 @@ template <typename Model, typename Policy> class Agent {
      */
     const Policy& policy() { return policy_; }
 
-    void seed_model() { model_.seed(rd()); }
-
-    void seed_policy() { policy_.seed(rd()); }
+    /**
+     * View the agent's accumulated data for each actions.
+     */
+    const std::vector<ExtAction>&
+        current_actions_info() const {
+        return actions_data;
+    }
 
     /**
      * Resets the agent's data with small gaussian noise as values.
@@ -56,30 +73,33 @@ template <typename Model, typename Policy> class Agent {
     mutable Policy policy_;
 
     // Storage for the agent's accumulated knowledge.
-    std::vector<ExtAction<typename Model::Action>> actions_data;
+    std::vector<ExtAction> actions_data;
 
     /**
      * Update the agent's statistics after a
      * newly sampled action.
      */
-    void update_stats(const typename Model::Action& action, double reward);
+    void update_stats(const Action& action, double reward);
+
+    void seed_model() { model_.seed(rd()); }
+
+    void seed_policy() { policy_.seed(rd()); }
 };
 
 template <typename Model, typename Policy>
-inline std::pair<typename Model::Action, double>
+inline std::pair<Action, double>
     Agent<Model, Policy>::sample() {
-    typename Model::Action action = policy_(actions_data);
 
-    double reward = model_.get_reward(action);
+    const Action action = policy_(actions_data);
+    const double reward = model_.get_reward(action);
+
     update_stats(action, reward);
-
     return std::make_pair(action, reward);
 }
 
 template <typename Model, typename Policy>
 inline void
-    Agent<Model, Policy>::update_stats(const typename Model::Action& action,
-                                       double reward) {
+    Agent<Model, Policy>::update_stats(const Action& action, double reward) {
     auto it = std::find(actions_data.begin(), actions_data.end(), action);
     assert(it != actions_data.end());
 
@@ -87,21 +107,33 @@ inline void
     it->total += reward;
 }
 
+template<typename Model, typename Policy>
+template<typename OutputIter>
+inline void Agent<Model, Policy>::run(size_t nb_samples, OutputIter out) {
+  std::generate_n(out, nb_samples, [&]{
+        out = sample();
+    });
+}
+
 template <typename Model, typename Policy>
 inline void Agent<Model, Policy>::reset() {
     actions_data.clear();
     gen.seed(rd());
-    model_.reset();
+    model_.reset(model_.number_of_actions());
 
+    // Initialize the actions accumulators with gaussian noise.
     std::generate_n(std::back_inserter(actions_data),
                     model_.number_of_actions(),
-                    [dist = std::normal_distribution<>(0.0, 0.1), n = 0,
+                    [dist = std::normal_distribution<>(0.0, 0.1), n = 0UL,
                      &g = gen]() mutable {
-                        ExtAction<typename Model::Action> ret(n++);
+                        ExtAction ret{ Action{n++} };
                         ret.visits = 0;
                         ret.total = dist(g);
                         return ret;
                     });
+
 }
+
+} // policy
 
 #endif // AGENT_H_

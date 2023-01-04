@@ -2,25 +2,39 @@
 #define EXTACTIONS_H_
 
 #include <cstddef>
+#include <string>
+#include <type_traits>
+
+
+namespace policy {
+
+#include "policies/extactions.h"
+
+namespace policy {
+
+bool operator<(const Action& a, const Action& b) {
+  return a.id < b.id;
+}
+
 
 /**
  * Structure wrapping actions with additional data.
  */
-template <typename Action> struct ExtAction {
-    explicit ExtAction(size_t idx)
-        : action{idx} { }
+struct ExtAction {
+    explicit ExtAction(Action action)
+        : action{action} { }
 
-    // The data to attach to actions during a search.
-    Action action;
-    int visits{0};
-    double total{0.0};
+    ExtAction(Action action, double reward, int visits=0)
+        : action{action}, total{reward}, visits{visits} {}
 
     operator Action() const { return action; }
 
-    /**
-     * In order e.g. to use `std::find()` on ExtActions
-     */
-    bool operator==(const Action& a) const { return this->action == action; }
+    // The data to attach to actions during a search.
+    Action action;
+    double total{0.0};
+    int visits{0};
 };
+
+}  // namespace policy
 
 #endif // EXTACTIONS_H_

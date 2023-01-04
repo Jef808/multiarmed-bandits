@@ -23,7 +23,7 @@ constexpr size_t default_n_episodes = 2000;
 
 const std::string log_dir = "/home/jfa/projects/ai/logs/multiarmed_bandits/";
 
-using ExtAction = ExtActionT<Action>;
+using policy::ExtAction = policy::ExtActionT<Action>;
 
 struct Options {
   size_t n_actions{ default_n_actions };

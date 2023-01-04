@@ -2,8 +2,8 @@
 #define POLICY_GREEDY_H_
 
 #include "extactions.h"
-#include "policies/helpers.h"
-#include "policies/random.h"
+#include "helpers.h"
+#include "random.h"
 
 #include <algorithm>
 #include <cassert>
@@ -16,44 +16,47 @@ namespace policy {
  * Select the action with the greatest average reward
  * to date.
  */
-struct EpsilonGreedy {
+class EpsilonGreedy {
+    static constexpr double defaultEpsilon = 0.1;
 
-    explicit EpsilonGreedy(double epsilon,
+  public:
+    explicit EpsilonGreedy(double epsilon = defaultEpsilon,
                            uint32_t seed = std::random_device{}());
 
-    template <typename Action>
-    Action operator()(const std::vector<ExtAction<Action>>& actions);
+    Action operator()(const std::vector<ExtAction>& actions);
 
     void seed(uint32_t seed = std::mt19937::default_seed);
 
-    double epsilon;
+    double& epsilon() { return m_epsilon; }
+
+    private:
+    double m_epsilon;
     Random policy_random;
 };
 
 inline EpsilonGreedy::EpsilonGreedy(double _epsilon, uint32_t seed)
-    : epsilon{_epsilon}
+    : m_epsilon{_epsilon}
     , policy_random{seed} {
 }
 
-template <typename Action>
 Action
-    EpsilonGreedy::operator()(const std::vector<ExtAction<Action>>& actions) {
+    EpsilonGreedy::operator()(const std::vector<ExtAction>& actions) {
     assert(not actions.empty() && "Agent has empty actions buffer");
 
-    std::bernoulli_distribution m_bernoulli(epsilon);
+    std::bernoulli_distribution m_bernoulli(m_epsilon);
     const bool chance = m_bernoulli(policy_random.m_gen);
 
     if (chance)
-        return policy_random(actions);
+        return policy_random(actions).action;
 
-    return *std::max_element(
+    return std::max_element(
         actions.begin(), actions.end(),
-        [](const ExtAction<Action>& a, const ExtAction<Action>& b) {
+        [](const ExtAction& a, const ExtAction& b) {
             return SampleAverage(a) < SampleAverage(b);
-        });
+        })->action;
 }
 
-void EpsilonGreedy::seed(uint32_t seed) {
+inline void EpsilonGreedy::seed(uint32_t seed) {
 
     policy_random.seed(seed);
 }

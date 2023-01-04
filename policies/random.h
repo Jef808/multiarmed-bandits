@@ -13,7 +13,7 @@ struct Random {
     Random(uint32_t q = std::random_device{}())
         : m_gen{q} { }
 
-    template <typename Action>
+    template<typename Action>
     Action operator()(const std::vector<Action>& actions);
 
     void seed(uint32_t q = std::mt19937::default_seed);
@@ -28,7 +28,7 @@ Action Random::operator()(const std::vector<Action>& actions) {
     return actions[dist(m_gen)];
 }
 
-void Random::seed(uint32_t q) {
+inline void Random::seed(uint32_t q) {
     m_gen.seed(q);
 }
 

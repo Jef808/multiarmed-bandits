@@ -2,7 +2,7 @@
 #define POLICY_UCB_H_
 
 #include "extactions.h"
-#include "policies/helpers.h"
+#include "helpers.h"
 
 #include <algorithm>
 #include <cassert>
@@ -27,16 +27,16 @@ class Ucb {
     /**
      * Evaluate the value of each action provided.
      */
-    template <typename Action>
-    Action operator()(const std::vector<ExtAction<Action>>& actions) const;
+    Action operator()(const std::vector<ExtAction>& actions) const;
 
     /**
      * Same as the `operator()` but save results in provided `buffer`, for
      * logging/debug purposes.
      */
-    template <typename Action>
-    void get_action_values(const std::vector<ExtAction<Action>>& actions,
+    void get_action_values(const std::vector<ExtAction>& actions,
                            std::vector<double>& buffer) const;
+
+    double& exploration() { return exploration_; }
 
   private:
     std::vector<double> buffer_;
@@ -47,9 +47,8 @@ inline Ucb::Ucb(double exploration)
     : exploration_{exploration} {
 }
 
-template <typename Action>
 inline double UCB(const double explor_cst, int total_visits,
-                  const ExtAction<Action>& e_action) {
+                  const ExtAction& e_action) {
     if (e_action.visits == 0) {
         return std::numeric_limits<double>::max();
     }
@@ -60,31 +59,29 @@ inline double UCB(const double explor_cst, int total_visits,
     return exploitation_term + exploration_term;
 }
 
-template <typename Action>
 inline Action
-    Ucb::operator()(const std::vector<ExtAction<Action>>& actions) const {
+    Ucb::operator()(const std::vector<ExtAction>& actions) const {
     assert(not actions.empty() && "Agent has empty actions buffer");
 
     int total_visits =
         std::accumulate(actions.begin(), actions.end(), 0,
                         [](int&& s, const auto& ea) { return s + ea.visits; });
 
-    return *std::max_element(
+    return std::max_element(
         actions.begin(), actions.end(),
         [&total_visits, kExploration = this->exploration_](
-            const ExtAction<Action>& a, const ExtAction<Action>& b) {
+            const ExtAction& a, const ExtAction& b) {
             return UCB(kExploration, total_visits, a)
                    < UCB(kExploration, total_visits, b);
-        });
+        })->action;
 }
 
-template <typename Action>
 inline void
-    Ucb::get_action_values(const std::vector<ExtAction<Action>>& actions,
+    Ucb::get_action_values(const std::vector<ExtAction>& actions,
                            std::vector<double>& buffer) const {
     int total_visits =
         std::accumulate(actions.begin(), actions.end(), 0,
-                        [](int& s, const auto& ea) { return s += ea.visits; });
+                        [](size_t s, const ExtAction& ea) { return s + ea.visits; });
     std::transform(
         actions.begin(), actions.end(), std::back_inserter(buffer),
         [&total_visits, kExploration = this->exploration_](const auto& ea) {

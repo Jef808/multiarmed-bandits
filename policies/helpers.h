@@ -7,8 +7,7 @@
  * If the action has not been visited, return the prior
  * value, otherwise the average reward it yielded to date.
  */
-template <typename Action>
-inline double SampleAverage(const ExtAction<Action>& e_action) {
+inline double SampleAverage(const policy::ExtAction& e_action) {
     if (e_action.visits == 0) {
         return e_action.total;
     }

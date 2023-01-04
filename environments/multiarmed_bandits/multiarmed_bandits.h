@@ -2,26 +2,15 @@
 #define MULTIARMED_BANDITS_H_
 
 #include <cstddef>
+#include <string>
 #include <random>
+#include <map>
 #include <vector>
 
-// struct Action {
-//     size_t idx;
-
-// bool operator==(const Action& other) const { return idx == other.idx; }
-// };
+#include "policies/extactions.h"
 
 class MultiArmedBandit {
   public:
-    struct Action {
-        size_t idx;
-
-        bool operator==(const Action& other) const { return idx == other.idx; }
-
-        [[nodiscard]] std::string to_string() const {
-            return std::to_string(idx);
-        }
-    };
 
     MultiArmedBandit() = default;
 
@@ -39,12 +28,17 @@ class MultiArmedBandit {
      * of each actions following a normal distribution
      * of mean 0 and variance 1.
      */
-    void reset();
+    void reset(size_t N);
 
     /**
      * The (fixed) number of available actions at any time.
      */
     [[nodiscard]] size_t number_of_actions() const { return N; }
+
+    /**
+     * Set the number of available actions.
+     */
+    void set_number_of_actions(size_t nb_action);
 
     /**
      * Get the reward for choosing a given action.
@@ -53,12 +47,12 @@ class MultiArmedBandit {
      * expected value by random gaussian noise of mean
      * 0 and variance 1.
      */
-    [[nodiscard]] double get_reward(const Action& action);
+    [[nodiscard]] double get_reward(const policy::Action& action);
 
     /**
      * View the real expected reward for the given action.
      */
-    [[nodiscard]] double expectation(const Action& action) const;
+    [[nodiscard]] double expectation(const policy::Action& action);
 
     /**
      * Compare the actions' expected values.
@@ -66,14 +60,14 @@ class MultiArmedBandit {
     bool operator==(const MultiArmedBandit& other) const;
 
   private:
-    /* The number of actions. */
-    size_t N{0};
-    /* The expected values of the actions. */
-    std::vector<double> m_values;
     /* Generator for obtaining the needed random values. */
     std::mt19937 m_gen;
     /* Distribution to generate noise in samples. */
     std::normal_distribution<> m_dist{0, 1};
+  /* The number of actions. */
+    size_t N{0};
+  /* The expected values of the actions. */
+    std::map<policy::Action, double> m_values;
 };
 
 #endif // MULTIARMED_BANDITS_H_
