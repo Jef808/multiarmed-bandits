@@ -30,11 +30,25 @@ void tag_invoke( json::value_from_tag, json::value& jv, Sample const& s) {
 
 namespace {
 
-inline std::string json_serialize(const std::vector<::policy::Sample>& series) {
-  return json::serialize(json::value_from( series ));
+inline std::string make_response(
+    std::string_view id,
+    std::string_view name,
+    const std::vector<::policy::Sample>& values)
+{
+  auto response =
+      json::object({
+          {"id", id},
+          {"data", json::array{}}});
+  response["data"] = {
+      json::object({
+                  {"name", name},
+                  {"values", json::value_from( values )}
+                })
+    };
+  return json::serialize(response);
 }
 
-}
+} // namespace
 
 namespace Query {
 
@@ -204,6 +218,7 @@ std::pair<bool, std::string> RequestHandler::operator()(const std::string& reque
         pretty(std::cout, req, std::string(indent_size, ' '));
         std::cout << std::endl;
 
+        const auto id = req["id"].get_string();
         const auto model = GetModelVariant(req["modelName"], req["modelParameters"]);
         const auto policy = GetPolicyVariant(req["policyName"], req["policyParameters"]);
         const auto nb_steps = GetNbSteps(req["options"]);
@@ -217,8 +232,7 @@ std::pair<bool, std::string> RequestHandler::operator()(const std::string& reque
           for (const auto& sample : buffer) {
             std::cout << "action: " << sample.action.id << ",\nstep: " << sample.step << ",\nvalue: " << sample.value << std::endl;
           }
-          return { true, json_serialize(buffer) };
-          //return { true, "" };
+          return { true, make_response(id, "rewards", buffer) };
         }
         catch (std::exception const& e)
         {
