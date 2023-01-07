@@ -1,6 +1,7 @@
 #ifndef POLICY_GREEDY_H_
 #define POLICY_GREEDY_H_
 
+#include "environments/actions.h"
 #include "extactions.h"
 #include "helpers.h"
 #include "random.h"
@@ -39,7 +40,7 @@ inline EpsilonGreedy::EpsilonGreedy(double _epsilon, uint32_t seed)
     , policy_random{seed} {
 }
 
-Action
+inline Action
     EpsilonGreedy::operator()(const std::vector<ExtAction>& actions) {
     assert(not actions.empty() && "Agent has empty actions buffer");
 

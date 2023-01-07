@@ -9,6 +9,8 @@
 
 #include "policies/extactions.h"
 
+namespace env {
+
 class MultiArmedBandit {
   public:
 
@@ -47,12 +49,12 @@ class MultiArmedBandit {
      * expected value by random gaussian noise of mean
      * 0 and variance 1.
      */
-    [[nodiscard]] double get_reward(const policy::Action& action);
+    [[nodiscard]] double get_reward(const Action& action);
 
     /**
      * View the real expected reward for the given action.
      */
-    [[nodiscard]] double expectation(const policy::Action& action);
+    [[nodiscard]] double expectation(const Action& action);
 
     /**
      * Compare the actions' expected values.
@@ -67,7 +69,9 @@ class MultiArmedBandit {
   /* The number of actions. */
     size_t N{0};
   /* The expected values of the actions. */
-    std::map<policy::Action, double> m_values;
+    std::map<Action, double> m_values;
 };
+
+}
 
 #endif // MULTIARMED_BANDITS_H_

@@ -1,7 +1,7 @@
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 
-#include "request_handler.h"
+#include "serverbackend/request_handler.h"
 #include "environments/multiarmed_bandits/multiarmed_bandits.h"
 #include "policies/policies.h"
 #include "policies/agent.h"
@@ -23,8 +23,6 @@ namespace http = beast::http;
 namespace websocket = beast::websocket;
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
-
-using namespace QuerySerialize;
 
 template<typename ErrorCode>
 void fail(ErrorCode ec, char const* what) {
@@ -99,7 +97,7 @@ void run(tcp::socket socket) {
     Queue queue;
     error_code ec;
 
-    QuerySerialize::RequestHandler request_handler;
+    Query::RequestHandler request_handler;
 
     try {
         websocket::stream<tcp::socket> ws{std::move(socket)};

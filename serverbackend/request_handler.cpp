@@ -1,19 +1,42 @@
-#include "request_handler.h"
+#include "serverbackend/request_handler.h"
+//#include "serverbackend/boost_serializer_helper.h"
 #include "environments/multiarmed_bandits/multiarmed_bandits.h"
 #include "policies/policies.h"
 #include "policies/agent.h"
 
+#include <boost/json.hpp>
 #include <boost/json/src.hpp>
 
 #include <algorithm>
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <string>
 #include <variant>
 
-namespace QuerySerialize {
-
 namespace json = boost::json;
+
+namespace policy {
+
+void tag_invoke( json::value_from_tag, json::value& jv, Sample const& s) {
+  jv = {
+    { "action" , s.action.id },
+    { "step" , s.step },
+    { "value" , s.value }
+  };
+}
+
+}  // namespace policy
+
+namespace {
+
+inline std::string json_serialize(const std::vector<::policy::Sample>& series) {
+  return json::serialize(json::value_from( series ));
+}
+
+}
+
+namespace Query {
 
 json::value
 parse_string( std::string_view sv )
@@ -123,10 +146,10 @@ pretty( std::ostream& out, json::value const& jv, std::string indent = "")
 }
 
 auto GetModelVariant(json::value modelName, json::value modelParameters) {
-    using Variant = std::variant<MultiArmedBandit>;
+    using Variant = std::variant<env::MultiArmedBandit>;
     if (modelName.get_string() == "mab") {
         auto nb_of_arms = static_cast<size_t>(modelParameters.get_object()["nbOfArms"].get_int64());
-        return Variant{MultiArmedBandit{nb_of_arms}};
+        return Variant{env::MultiArmedBandit{nb_of_arms}};
     }
 
     throw std::runtime_error("Unknown model name");
@@ -184,19 +207,34 @@ std::pair<bool, std::string> RequestHandler::operator()(const std::string& reque
         const auto model = GetModelVariant(req["modelName"], req["modelParameters"]);
         const auto policy = GetPolicyVariant(req["policyName"], req["policyParameters"]);
         const auto nb_steps = GetNbSteps(req["options"]);
-        series_buffer.data.clear();
+        std::vector<::policy::Sample> buffer;
 
-        auto out = std::back_inserter(series_buffer);
+        auto out = std::back_inserter(buffer);
 
         try
         {
           std::visit(Visitor{nb_steps, out}, model, policy);
-          return { true, json::serialize(json::value_from( series_buffer )) };
+          for (const auto& sample : buffer) {
+            std::cout << "action: " << sample.action.id << ",\nstep: " << sample.step << ",\nvalue: " << sample.value << std::endl;
+          }
+          return { true, json_serialize(buffer) };
+          //return { true, "" };
         }
         catch (std::exception const& e)
         {
           std::cerr << "Error while running policy: "
                     << e.what() << std::endl;
+          return { false, "" };
+        }
+        try
+        {
+          //std::string result = json::serialize(json::value_from(buffer));
+          //return std::make_pair( true, std::move(result) );
+        }
+        catch (std::exception const& e)
+        {
+          std::cerr << "Error while serializing results: "
+              << e.what() << std::endl;
           return { false, "" };
         }
     }
@@ -208,4 +246,4 @@ std::pair<bool, std::string> RequestHandler::operator()(const std::string& reque
     }
 }
 
-} // namespace DataQuery
+} // namespace Query

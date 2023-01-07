@@ -4,28 +4,16 @@
 #ifndef BOOST_FROM_JSON_H_
 #define BOOST_FROM_JSON_H_
 
+#include "environments/actions.h"
+#include "policies/agent.h"
+#include "serverbackend/request_handler.h"
+
 #include <boost/describe.hpp>
 #include <boost/mp11.hpp>
 #include <boost/json.hpp>
 #include <string>
 #include <vector>
 
-
-namespace policy {
-struct Action {
-    size_t id{0};
-    explicit Action(size_t id)
-        : id{ id } { }
-
-    operator std::string() const { return std::to_string(id); }
-
-    bool operator==(const Action& action) const { return id == action.id;}
-    bool operator<(const Action& action) const { return id < action.id; }
-};
-   BOOST_DESCRIBE_STRUCT(Action, (), (id));
-}
-
-namespace QuerySerialize {
 
 template <class T, class D1 = boost::describe::describe_members<T, boost::describe::mod_public | boost::describe::mod_protected>,
     class D2 = boost::describe::describe_members<T, boost::describe::mod_private>,
@@ -64,23 +52,20 @@ T tag_invoke(boost::json::value_to_tag<T> const &,
   return t;
 }
 
-struct Sample {
-  size_t action_idx{0};
-  double value{0};
+namespace env {
+   BOOST_DESCRIBE_STRUCT(Action, (), (id));
+}
 
-  Sample() = default;
+namespace policy {
+   BOOST_DESCRIBE_STRUCT(Sample, (), (action, step, value));
+}
 
-  Sample(std::pair<::policy::Action, double> av)
-      : action_idx{ av.first.id }, value{ av.second } {}
-};
+namespace Query {
 
-using Series = std::vector<Sample>;
-
-BOOST_DESCRIBE_STRUCT(Sample, (), (action_idx, value));
-//BOOST_DESCRIBE_STRUCT(Series, ());
+BOOST_DESCRIBE_STRUCT(Series, (), (values));
+} // namespace Query
 
 
-} // QuerySerialize
 
 
 #endif // BOOST_FROM_JSON_H_

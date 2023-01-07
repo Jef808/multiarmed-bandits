@@ -1,21 +1,11 @@
 #ifndef EXTACTIONS_H_
 #define EXTACTIONS_H_
 
-#include <cstddef>
-#include <string>
-#include <type_traits>
+#include "environments/actions.h"
 
-
-namespace policy {
-
-#include "policies/extactions.h"
+using Action = env::Action;
 
 namespace policy {
-
-bool operator<(const Action& a, const Action& b) {
-  return a.id < b.id;
-}
-
 
 /**
  * Structure wrapping actions with additional data.

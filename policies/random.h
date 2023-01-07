@@ -22,7 +22,7 @@ struct Random {
 };
 
 template <typename Action>
-Action Random::operator()(const std::vector<Action>& actions) {
+inline Action Random::operator()(const std::vector<Action>& actions) {
     assert(not actions.empty() && "Agent has empty actions buffer");
     std::uniform_int_distribution<> dist(0, actions.size() - 1);
     return actions[dist(m_gen)];

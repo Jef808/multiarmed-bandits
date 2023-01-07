@@ -12,6 +12,17 @@
 
 namespace policy {
 
+struct Sample {
+  env::Action action{0};
+  size_t step{0};
+  double value{0};
+
+  Sample() = default;
+
+  Sample(const env::Action& a, size_t s, double v)
+      : action{ a }, step{ s }, value{ v } {}
+  //     : action{ av.first.id }, value{ av.second } {}
+};
 
 template <typename Model, typename Policy> class Agent {
   public:
@@ -23,7 +34,7 @@ template <typename Model, typename Policy> class Agent {
     /**
      * Sample the model according to the policy's current state.
      */
-    std::pair<Action, double> sample();
+    Sample sample();
 
     /**
      * Sample the model `nb_samples` of times, each time choosing the
@@ -72,6 +83,9 @@ template <typename Model, typename Policy> class Agent {
     // Specified mutable because it uses RNG which has state
     mutable Policy policy_;
 
+    // The last step sampled.
+    mutable size_t current_step{ 0 };
+
     // Storage for the agent's accumulated knowledge.
     std::vector<ExtAction> actions_data;
 
@@ -87,14 +101,14 @@ template <typename Model, typename Policy> class Agent {
 };
 
 template <typename Model, typename Policy>
-inline std::pair<Action, double>
+inline Sample
     Agent<Model, Policy>::sample() {
 
     const Action action = policy_(actions_data);
     const double reward = model_.get_reward(action);
 
     update_stats(action, reward);
-    return std::make_pair(action, reward);
+    return Sample{ action, current_step++, reward };
 }
 
 template <typename Model, typename Policy>
@@ -111,7 +125,7 @@ template<typename Model, typename Policy>
 template<typename OutputIter>
 inline void Agent<Model, Policy>::run(size_t nb_samples, OutputIter out) {
   std::generate_n(out, nb_samples, [&]{
-        out = sample();
+        return sample();
     });
 }
 

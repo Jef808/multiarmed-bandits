@@ -1,13 +1,15 @@
 #ifndef REQUEST_HANDLER_H_
 #define REQUEST_HANDLER_H_
 
+#include "environments/actions.h"
+#include "policies/agent.h"
+
 #include <boost/json.hpp>
-#include "boost_serializer_helper.h"
 
 #include <string>
 #include <vector>
 
-namespace QuerySerialize {
+namespace Query {
 
 class RequestHandler {
     public:
@@ -15,8 +17,6 @@ class RequestHandler {
 
         std::pair<bool, std::string> operator()(const std::string& request);
 
-    private:
-        Series series_buffer;
 };
 
 }
