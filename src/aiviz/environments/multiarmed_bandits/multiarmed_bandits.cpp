@@ -6,7 +6,7 @@
 #include <random>
 #include <utility>
 
-#include "environments/actions.h"
+#include "aiviz/environments/actions.h"
 
 namespace env {
 

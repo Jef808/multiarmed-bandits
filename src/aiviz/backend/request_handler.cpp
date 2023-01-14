@@ -1,8 +1,8 @@
-#include "serverbackend/request_handler.h"
+#include "aiviz/backend/request_handler.h"
 //#include "serverbackend/boost_serializer_helper.h"
-#include "environments/multiarmed_bandits/multiarmed_bandits.h"
-#include "policies/policies.h"
-#include "policies/agent.h"
+#include "aiviz/environments/multiarmed_bandits/multiarmed_bandits.h"
+#include "aiviz/policies/policies.h"
+#include "aiviz/policies/agent.h"
 
 #include <boost/json.hpp>
 #include <boost/json/src.hpp>

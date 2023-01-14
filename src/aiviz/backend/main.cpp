@@ -1,10 +1,10 @@
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 
-#include "serverbackend/request_handler.h"
-#include "environments/multiarmed_bandits/multiarmed_bandits.h"
-#include "policies/policies.h"
-#include "policies/agent.h"
+#include "aiviz/backend/request_handler.h"
+#include "aiviz/environments/multiarmed_bandits/multiarmed_bandits.h"
+#include "aiviz/policies/policies.h"
+#include "aiviz/policies/agent.h"
 
 #include <atomic>
 #include <cassert>

@@ -1,7 +1,7 @@
 #ifndef EXTACTIONS_H_
 #define EXTACTIONS_H_
 
-#include "environments/actions.h"
+#include "aiviz/environments/actions.h"
 
 using Action = env::Action;
 

@@ -1,8 +1,8 @@
 #ifndef REQUEST_HANDLER_H_
 #define REQUEST_HANDLER_H_
 
-#include "environments/actions.h"
-#include "policies/agent.h"
+#include "aiviz/environments/actions.h"
+#include "aiviz/policies/agent.h"
 
 #include <boost/json.hpp>
 

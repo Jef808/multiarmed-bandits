@@ -1,4 +1,0 @@
-#ifndef WEBSOCKETSERV_H_
-#define WEBSOCKETSERV_H_
-
-#endif // WEBSOCKETSERV_H_

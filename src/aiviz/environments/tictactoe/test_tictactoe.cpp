@@ -1,4 +1,4 @@
-#include "environments/tictactoe/tictactoe.h"
+#include "aiviz/environments/tictactoe/tictactoe.h"
 
 #include <cstddef>
 #include <iostream>

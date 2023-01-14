@@ -1,10 +1,10 @@
 #ifndef POLICY_GREEDY_H_
 #define POLICY_GREEDY_H_
 
-#include "environments/actions.h"
-#include "extactions.h"
-#include "helpers.h"
-#include "random.h"
+#include "aiviz/environments/actions.h"
+#include "aiviz/policies/extactions.h"
+#include "aiviz/policies/helpers.h"
+#include "aiviz/policies/random.h"
 
 #include <algorithm>
 #include <cassert>
