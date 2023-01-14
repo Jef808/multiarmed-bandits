@@ -1,0 +1,154 @@
+#+title: Typescript
+
+* Project configuration
+
+* Single File Components
+** <script setup>
+When using the ~<script setup>~ tag instead of ~<script>~ for constructing a component, there are some important points to take into account, especially when also using Typescript.
+***
+
+* Default vs named export - importing features vs creating module object
+This is stupid, but I got stuck for a while because of taking things for granted again...
+I was trying to use some json object, say
+#+begin_src json
+{
+    "item1":
+    {
+        "a": 1,
+        "b": 2
+    },
+    "item2":
+    {
+        "Johnny": true,
+        "Girda": false
+    }
+}
+#+end_src
+which lives in its own .json file, by importing it as an ES module instead of using the fetch API.
+For some reason, I ended up choosing the syntax
+#+begin_src js
+import * as JSON_bad from "path/to/data.json" assert { type: "json" };
+#+end_src
+instead of the correct
+#+begin_src js
+import JSON_good from "path/to/data.json" assert { type: "json" };
+#+end_src
+What I failed to realise before inspecting the objects on the console is that importing the json file is interpreted as a module containing a single default export.
+Thus this is equivalent to having something like
+#+begin_src js
+// data.js
+export default {
+    item1: {
+        a: 1,
+        b: 2
+    },
+    item2: {
+        Johnny: true,
+        Girda: false
+    }
+}
+#+end_src
+Note: the =default= keyword here should be taken more literally:
+#+begin_quote
+Importing the module ~data.js~ via the standard (1)
+
+```
+import Data from "path/to/data.js"
+```
+
+is equivalent to importing it as a *named export* and renaming it to Data, i.e. to
+
+```
+import { default as Data } from "path/to/data.js"
+```
+
+On the other hand, by importing it as (2)
+
+```
+import * as Data from "path/to/data.js"
+```
+
+creates a *module object* named 'Data', which contains our unique object, named 'default'.
+#+end_quote
+So in case of (2), =Data= is an object of the form
+ #+begin_src js
+Data = {
+    default: {
+        item1:
+        {
+            a: 1,
+            b: 2
+        },
+        item2:
+        {
+            Johnny: true,
+            Girda: false
+        }
+}
+ #+end_src
+whereas the import in (1) results in
+#+begin_src js
+Data = {
+    item1:
+    {
+        a: 1,
+        b: 2
+    },
+    item2:
+    {
+        Johnny: true,
+        Girda: false
+    }
+}
+#+end_src
+** Importing Array objects
+The case of array objects is where my confusion arised.
+Similarly, we consider an export of the form
+#+begin_src js
+// data.js
+export default [
+   {
+       name: "item1",
+       value: { a: 1, b: 2 }
+   },
+   {
+       name: "item2",
+       value: { Johnny: true, Girda: false }
+   }
+]
+#+end_src
+As far as the information contained is concerned, the two objects are obviously equivalent.
+As javascript objects, however, they are a bit different.
+When we import our new object by specifying a name, we simply end up with a named Array object:
+#+begin_src js
+import Data from "path/to/data.js"
+
+Data === [
+   { name: "item1", value: { a: 1, b: 2 } },
+   { name: "item2", value: { Johnny: true, Girda: false } }
+]
+#+end_src
+However, the same logic as before applies when importing as a Module object.
+Namely, we obtain an object with a single Array object named 'default':
+#+begin_src js
+import * as Data from "path/to/data.js"
+
+console.log(Data);
+
+Data === {
+  default: [
+    { name: "item1", value: { a: 1, b: 2 } },
+    { name: "item2", value: { Johnny: true, Girda: false } }
+  ]
+}
+#+end_src
+This time, the two imported objects are very different.
+I was very confused when the debugger was telling me that writing Data.map did not refer to a function, yet the object I thought was a builtin Array was not even iterable!
+Even after I successfully destructured it to get my hand on the actual data, the fact that it is nested one level deeper was introducing bugs related to reactivity when using vue.js refs and such...
+#+begin_quote
+Moral of the story: RTFM?
+#+end_quote
+
+* TODOs
+** Bug regarding v-click-outside
+When the 'Policy' panel is open and I use the <v-select> to switch policies, the whole pane gets closed as if a 'cancel' event was emitted...

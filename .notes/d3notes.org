@@ -1,0 +1,14 @@
+#+title: D3notes
+
+* Interactive Multi-armed bandit environment.
+The goal of this component is to enable users discovering the pros and cons of different strategies for solving the MAB problem by going through it hands-on.
+As I feel like working with a more flexible even if arguably less user-friendly tool like d3 over JSCharting would be very benificial in the long run, I will build this one using only d3 modules.
+
+** d3-array
+The array component offers many ways to quickly group data into the desired hierarchy or shape (see [[https://github.com/d3/d3-array/tree/v3.2.0#transformations][Transformations]] or [[https://github.com/d3/d3-array/tree/v3.2.0#sets][Sets]]).
+Methods to easily compute statistics are also exposed (see [[https://github.com/d3/d3-array/tree/v3.2.0#statistics][Statistics]]).
+** Chart types
+*** Bar charts
+The obvious first thing to do should be to build a simple but solid bar chart representing each action's reward and/or regret as the user explores his options.
+**** Examples
+There is a vast and diverse range of well designed bar chart examples provided by d3 to get a head start. Let us start by looking at the one called [[https://observablehq.com/@d3/bar-chart-race]['Bar Chart Race]]'.

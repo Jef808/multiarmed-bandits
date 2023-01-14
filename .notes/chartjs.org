@@ -1,0 +1,133 @@
+#+title: Chartjs
+
+* Data structures
+** Primitive[]
+#+begin_src lang js
+const cfg = {
+  type: 'bar',
+  data: {
+    datasets: [{
+      data: [20, 10],
+    }],
+    labels: ['a', 'b']
+  }
+}
+#+end_src
+*** Note: When `typeof data === number[]` as above, the labels correspond to each dataset's data array index-wise.
+(think .csv file)
+**  Object[]
+- 1)
+#+begin_src lang js
+const cfg = {
+  type: 'line',
+  data: {
+    datasets: [{
+      data: [{x: 10, y: 20}, {x: 15, y: null}, {x: 20, y: 10}]
+    }]
+  }
+}
+#+end_src
+- 2)
+#+begin_src :lang js
+const cfg = {
+  type: 'line',
+  data: {
+    datasets: [{
+      data: [{x: '2016-12-25', y: 20}, {x: '2016-12-26', y: 10}]
+    }]
+  }
+}
+#+end_src
+- 3)
+  #+begin_src lang js
+const cfg = {
+  type: 'bar',
+  data: {
+    datasets: [{
+      data: [{x: 'Sales', y: 20}, {x: 'Revenue', y: 10}]
+    }]
+  }
+}
+  #+end_src
+- 4) (Using custom properties)
+#+begin_src :lang js
+const cfg = {
+  type: 'bar',
+  data: {
+    datasets: [{
+      data: [{id: 'Sales', nested: {value: 1500}}, {id: 'Purchases', nested: {value: 500}}]
+    }]
+  },
+  options: {
+    parsing: {
+      xAxisKey: 'id',
+      yAxisKey: 'nested.value'
+    }
+  }
+}
+
+#+end_src
+** Parsing custom object into separate datasets
+#+begin_src :lang js
+const data = [{x: 'Jan', net: 100, cogs: 50, gm: 50}, {x: 'Feb', net: 120, cogs: 55, gm: 75}];
+const cfg = {
+  type: 'bar',
+  data: {
+    labels: ['Jan', 'Feb'],
+    datasets: [{
+      label: 'Net sales',
+      data: data,
+      parsing: {
+        yAxisKey: 'net'
+      }
+    }, {
+      label: 'Cost of goods sold',
+      data: data,
+      parsing: {
+        yAxisKey: 'cogs'
+      }
+    }, {
+      label: 'Gross margin',
+      data: data,
+      parsing: {
+        yAxisKey: 'gm'
+      }
+    }]
+  },
+};
+#+end_src
+** Typescript
+#+begin_src :lang js
+import {ChartData} from 'chart.js';
+
+const datasets: ChartData <'bar', {key: string, value: number} []> = {
+  datasets: [{
+    data: [{key: 'Sales', value: 20}, {key: 'Revenue', value: 10}],
+    parsing: {
+      xAxisKey: 'key',
+      yAxisKey: 'value'
+    }
+  }],
+};
+#+end_src
+** Color Palette
+https://www.chartjs.org/docs/latest/general/colors.html
+
+- Ex: default (built-in =Colors= plugin)
+  #+begin_src :lang js
+import { Colors } from 'chart.js'
+
+Chart.register(Colors);
+  #+end_src
+*** Note: Colors plugin and border/background colors
+By default, colors plugin only works when initializing the chart without colors for border or background.
+To force colors plugin to always color datasets, set following options
+#+begin_src :lang js
+const options = {
+  plugins: {
+    colors: {
+      forceOverride: true
+    }
+  }
+};
+#+end_src

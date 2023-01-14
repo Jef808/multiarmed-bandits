@@ -1,0 +1,188 @@
+% Created 2022-09-14 Wed 11:01
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\author{Jean-Francois Arbour}
+\date{\today}
+\title{Noise Generation}
+\hypersetup{
+ pdfauthor={Jean-Francois Arbour},
+ pdftitle={Noise Generation},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.1 (Org mode 9.6)}, 
+ pdflang={English}}
+\usepackage{biblatex}
+\addbibresource{~/bib/references.bib}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{Gaussian Noise generator}
+\label{sec:org3af9a6b}
+Two simple ways of generating samples from a Gaussian distribution:
+\subsubsection{Box and Muller method}
+\label{sec:org1429bae}
+
+\begin{theroem}\label{thrm:box-muller}\cite{Box1958ANO}
+Let $u$ and $v$ be independant samples chosen from a uniform distribution on $(0, 1) \subset \mathbb{R}$ and $(R, \Theta)$ corresponding polar coordinates.
+Let
+\begin{equation}
+  z_0 = R \cos (\Theta) = \sqrt{-2 \log u } \cos (2 \pi v)
+\end{equation}
+and
+\begin{equation}
+  z_1 = R \sin (\Theta) = \sqrt{-2 \log u } \sin (2 \pi v).
+\end{equation}
+Then $z_0$ and $z_1$ are independant random variables both distributed a standard normal distribution of mean $0$ and variance $1$.
+Generate samples from a standard normal distribution with mean $\mu$ and variance $\sigma^2$ by considering the random variables $Z_{0,1} = \mu + \sigma * z_{0,1}$.
+\end{theorem}
+
+\subsubsection{Marsaglia method}
+\label{sec:org024a80b}
+Let us first establish the geometric picture for this result:
+Consider the open square
+\mathbb{Sq} = (-1, 1) \times (-1, 1)
+
+of side length \(2\) in the plane, along with its inscribed open disk
+\mathbb{D} = \{ (x, y) \mid x ^ 2 + y ^ 2 < 1 \}.
+
+For \(u\) and \(v\) two independant random variables with values in the plane, we will denote in what follows by
+\begin{equation*}
+\rho = \rho(u, v) = u ^ 2 + v ^ 2
+\end{equation*}
+
+Consider any two uniformly distributed and independant variables \(U, V\) with values in \(\mathbb{Sq}\) but constrained by the condition that $0 < \rho(U, V) < 1$ with probability $1$.
+Then with
+\begin{subequations}\begin{equation}\label{eq:z0}
+  z_0 = \frac{U}{\sqrt{ \rho }} * \sqrt{ \frac{ -2 \,\log{\rho} }{\rho} }
+\end{equation}
+and
+\begin{equation}\label{eq:z1}
+  z_1 = \frac{V}{\sqrt{ \rho }} * \sqrt{ \frac { -2 \,\log{\rho} }{\rho} }
+\end{equation}\end{subequations}
+\begin{remark}
+Notice that
+\begin{equation*}
+  \frac{U}{\sqrt{\rho}} = \cos(\theta)
+\end{equation*}
+and similarly,
+\begin{equation*}
+  \frac{V}{\sqrt{\rho}} = \sin(\theta).
+\end{equation*}
+So by writing $R = \displaymath{\sqrt{\frac{-2 \log { \rho }}{\rho}}}$, we can write
+\begin{equation}\begin{cases}
+z_0 &= R \cos (\theta), \\
+z_1 &= R \sin (\theta).
+\end{cases}\end{equation}
+\end{remark}
+
+\begin{theroem}[\cite{MR172441}]
+With the notation as above, $z_0$ and $z_1$ form two independant variables distributed along a standard normal distribution with mean $0$ and standard deviation $1$. By scaling them to
+\begin{equation}\begin{cases}
+Z_0 &= \mu + \sigma z_0, \\
+Z_1 &= \mu + \sigma z_1,
+\end{cases}\end{equation}
+we obtain two independant variables distributed along a normal distribution with mean $\mu$ and variance $\sigma ^ 2$.
+\end{theorem}
+
+\subsection{Test}
+\label{sec:org0e4ef8e}
+\subsubsection{Box and Muller method}
+\label{sec:org342b0cc}
+
+\begin{verbatim}
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+\end{verbatim}
+
+As a test, we'll generate samples from a normal distribution using numpy's blackbox:
+\begin{verbatim}
+mu = 0.0
+sigma = 1.0
+number_of_samples = 200
+normal_samples = np.random.default_rng().normal(mu, sigma, number_of_samples)
+\end{verbatim}
+
+Sanity checks:
+\begin{verbatim}
+mean_near_mu = abs( mu - np.mean(normal_samples) )
+std_near_sigma = abs(sigma - np.std(normal_samples, ddof=1))
+
+assert(mean_near_mu < 0.2)
+assert(std_near_sigma < 0.2)
+\end{verbatim}
+
+Plot the above
+\begin{verbatim}
+fig=plt.figure(figsize=(4,2))
+count, bins, ignored = plt.hist(normal_samples, 30, ec='orange', fc='steelblue', density=True)
+plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) *
+               np.exp( - (bins - mu)**2 / (2 * sigma**2) ),
+         linewidth=2, color='violet', alpha=0.5)
+fig.tight_layout()
+fname="images/numpyExpectationsBarChart.png"
+plt.show(fname)
+#fname
+\end{verbatim}
+
+Compare with data generated from our own gaussian sampling method:
+\begin{verbatim}
+import math
+import random
+
+def getGaussianPair():
+    u = random.random()
+    v = random.random()
+    while u == 0:
+        u = random.random()
+    sqrt_minustwo_logu = math.sqrt(-2 * math.log(u))
+    two_pi_v = 2 * math.pi * v
+    z_0 = sqrt_minustwo_logu * math.cos(two_pi_v)
+    z_1 = sqrt_minustwo_logu * math.sin(two_pi_v)
+    return [z_0, z_1]
+
+def sample():
+    if (self.has_spare):
+      self.sample.append(self.spare)
+      self.has_spare = False
+    else:
+      self.spare, result = getGaussianPair()
+      self.has_spare = True
+      self.sample.append(result)
+
+def getSample(sample_size):
+    result = []
+    for _ in range(sample_size):
+        result.append(getGaussianPair()[0])
+        print(result)
+\end{verbatim}
+
+\begin{verbatim}
+sample = getSample(number_of_samples)
+
+fig=plt.figure(figsize=(4,2))
+count, bins, ignored = plt.hist(sample, 30, ec='orange', fc='steelblue', density=True, histtype='barstacked')
+plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) *
+               np.exp( - (bins - mu)**2 / (2 * sigma**2) ),
+         linewidth=2, color='violet', alpha=0.5)
+fig.tight_layout()
+fname="images/expectationsBarChart.png"
+plt.show(fname)
+fname
+\end{verbatim}
+\end{document}

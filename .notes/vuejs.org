@@ -1,0 +1,12 @@
+#+title: Vuejs
+
+* Charts
+** JSCharting
+*** Installation
+Install locally with npm:
+#+begin_src shell
+npm install jscharting-vue
+#+end_src
+*** Chart configuration API
+**** chartType
+See [[https://jscharting.com/documentation/#node=Home.API.json.Enums.chartType][API Documentation]]

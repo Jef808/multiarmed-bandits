@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2022-09-14 Wed 10:57 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Noise Generation</title>
+<meta name="author" content="Jean-Francois Arbour" />
+<meta name="generator" content="Org Mode" />
+<style>
+  #content { max-width: 60em; margin: auto; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    padding: 3px;
+    color: #555;
+    background-color: #f2f2f299;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { }
+</style>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        displayAlign: "center",
+        displayIndent: "0em",
+
+        "HTML-CSS": { scale: 100,
+                        linebreaks: { automatic: "false" },
+                        webFont: "TeX"
+                       },
+        SVG: {scale: 100,
+              linebreaks: { automatic: "false" },
+              font: "TeX"},
+        NativeMML: {scale: 100},
+        TeX: { equationNumbers: {autoNumber: "AMS"},
+               MultLineWidth: "85%",
+               TagSide: "right",
+               TagIndent: ".8em"
+             }
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Noise Generation</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#org6f57e0a">1. Gaussian Noise generator</a>
+<ul>
+<li>
+<ul>
+<li><a href="#org04a25f1">1.0.1. Box and Muller method</a></li>
+<li><a href="#orgda82efe">1.0.2. Marsaglia method</a></li>
+</ul>
+</li>
+<li><a href="#orgd012c73">1.1. Test</a>
+<ul>
+<li><a href="#org3b72114">1.1.1. Box and Muller method</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org6f57e0a" class="outline-2">
+<h2 id="org6f57e0a"><span class="section-number-2">1.</span> Gaussian Noise generator</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Two simple ways of generating samples from a Gaussian distribution:
+</p>
+</div>
+<div id="outline-container-org04a25f1" class="outline-4">
+<h4 id="org04a25f1"><span class="section-number-4">1.0.1.</span> Box and Muller method</h4>
+<div class="outline-text-4" id="text-1-0-1">
+</div>
+</div>
+
+<div id="outline-container-orgda82efe" class="outline-4">
+<h4 id="orgda82efe"><span class="section-number-4">1.0.2.</span> Marsaglia method</h4>
+<div class="outline-text-4" id="text-1-0-2">
+<p>
+Let us first establish the geometric picture for this result:
+Consider the open square
+</p>
+<p>
+of side length \(2\) in the plane, along with its inscribed open disk
+</p>
+<p>
+For \(u\) and \(v\) two independant random variables with values in the plane, we will denote in what follows by
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgd012c73" class="outline-3">
+<h3 id="orgd012c73"><span class="section-number-3">1.1.</span> Test</h3>
+<div class="outline-text-3" id="text-1-1">
+</div>
+<div id="outline-container-org3b72114" class="outline-4">
+<h4 id="org3b72114"><span class="section-number-4">1.1.1.</span> Box and Muller method</h4>
+<div class="outline-text-4" id="text-1-1-1">
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #51afef;">import</span> matplotlib
+matplotlib.<span style="color: #51afef; font-weight: bold; font-style: italic;">use</span>(<span style="color: #98be65;">'Agg'</span>)
+<span style="color: #51afef;">import</span> matplotlib.pyplot <span style="color: #51afef;">as</span> plt
+<span style="color: #51afef;">import</span> numpy <span style="color: #51afef;">as</span> np
+</pre>
+</div>
+
+<p>
+As a test, we&rsquo;ll generate samples from a normal distribution using numpy&rsquo;s blackbox:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #dcaeea;">mu</span> <span style="color: #51afef;">=</span> <span style="color: #a9a1e1;">0.0</span>
+<span style="color: #dcaeea;">sigma</span> <span style="color: #51afef;">=</span> <span style="color: #a9a1e1;">1.0</span>
+<span style="color: #dcaeea;">number_of_samples</span> <span style="color: #51afef;">=</span> <span style="color: #a9a1e1;">200</span>
+<span style="color: #dcaeea;">normal_samples</span> <span style="color: #51afef;">=</span> np.<span style="color: #a9a1e1; font-style: italic;">random</span>.<span style="color: #51afef; font-weight: bold; font-style: italic;">default_rng</span>().<span style="color: #51afef; font-weight: bold; font-style: italic;">normal</span>(mu, sigma, number_of_samples)
+</pre>
+</div>
+
+<p>
+Sanity checks:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #dcaeea;">mean_near_mu</span> <span style="color: #51afef;">=</span> <span style="color: #c678dd; font-weight: bold;">abs</span>( mu <span style="color: #51afef;">-</span> np.<span style="color: #51afef; font-weight: bold; font-style: italic;">mean</span>(normal_samples) )
+<span style="color: #dcaeea;">std_near_sigma</span> <span style="color: #51afef;">=</span> <span style="color: #c678dd; font-weight: bold;">abs</span>(sigma <span style="color: #51afef;">-</span> np.<span style="color: #51afef; font-weight: bold; font-style: italic;">std</span>(normal_samples, <span style="color: #51afef; font-weight: bold;">ddof</span><span style="color: #51afef;">=</span><span style="color: #a9a1e1;">1</span>))
+
+<span style="color: #51afef;">assert</span>(mean_near_mu <span style="color: #51afef;">&lt;</span> <span style="color: #a9a1e1;">0.2</span>)
+<span style="color: #51afef;">assert</span>(std_near_sigma <span style="color: #51afef;">&lt;</span> <span style="color: #a9a1e1;">0.2</span>)
+</pre>
+</div>
+
+<p>
+Plot the above
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #dcaeea;">fig</span><span style="color: #51afef;">=</span>plt.<span style="color: #51afef; font-weight: bold; font-style: italic;">figure</span>(<span style="color: #51afef; font-weight: bold;">figsize</span><span style="color: #51afef;">=</span>(<span style="color: #a9a1e1;">4</span>,<span style="color: #a9a1e1;">2</span>))
+<span style="color: #dcaeea;">count</span>, <span style="color: #dcaeea;">bins</span>, <span style="color: #dcaeea;">ignored</span> <span style="color: #51afef;">=</span> plt.<span style="color: #51afef; font-weight: bold; font-style: italic;">hist</span>(normal_samples, <span style="color: #a9a1e1;">30</span>, <span style="color: #51afef; font-weight: bold;">ec</span><span style="color: #51afef;">=</span><span style="color: #98be65;">'orange'</span>, <span style="color: #51afef; font-weight: bold;">fc</span><span style="color: #51afef;">=</span><span style="color: #98be65;">'steelblue'</span>, <span style="color: #51afef; font-weight: bold;">density</span><span style="color: #51afef;">=</span><span style="color: #c678dd;">True</span>)
+plt.<span style="color: #51afef; font-weight: bold; font-style: italic;">plot</span>(bins, <span style="color: #a9a1e1;">1</span><span style="color: #51afef;">/</span>(sigma <span style="color: #51afef;">*</span> np.<span style="color: #51afef; font-weight: bold; font-style: italic;">sqrt</span>(<span style="color: #a9a1e1;">2</span> <span style="color: #51afef;">*</span> np.<span style="color: #a9a1e1; font-style: italic;">pi</span>)) <span style="color: #51afef;">*</span>
+               np.<span style="color: #51afef; font-weight: bold; font-style: italic;">exp</span>( <span style="color: #51afef;">-</span> (bins <span style="color: #51afef;">-</span> mu)<span style="color: #51afef;">**</span><span style="color: #a9a1e1;">2</span> <span style="color: #51afef;">/</span> (<span style="color: #a9a1e1;">2</span> <span style="color: #51afef;">*</span> sigma<span style="color: #51afef;">**</span><span style="color: #a9a1e1;">2</span>) ),
+         <span style="color: #51afef; font-weight: bold;">linewidth</span><span style="color: #51afef;">=</span><span style="color: #a9a1e1;">2</span>, <span style="color: #51afef; font-weight: bold;">color</span><span style="color: #51afef;">=</span><span style="color: #98be65;">'violet'</span>, <span style="color: #51afef; font-weight: bold;">alpha</span><span style="color: #51afef;">=</span><span style="color: #a9a1e1;">0.5</span>)
+fig.<span style="color: #51afef; font-weight: bold; font-style: italic;">tight_layout</span>()
+fname<span style="color: #51afef;">=</span><span style="color: #98be65;">"images/numpyExpectationsBarChart.png"</span>
+plt.<span style="color: #51afef; font-weight: bold; font-style: italic;">show</span>(fname)
+<span style="color: #5B6268;">#fname</span>
+</pre>
+</div>
+
+<p>
+Compare with data generated from our own gaussian sampling method:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #51afef;">import</span> math
+<span style="color: #51afef;">import</span> random
+
+<span style="color: #51afef;">def</span> <span style="color: #c678dd;">getGaussianPair</span>():
+    <span style="color: #dcaeea;">u</span> <span style="color: #51afef;">=</span> random.<span style="color: #51afef; font-weight: bold; font-style: italic;">random</span>()
+    <span style="color: #dcaeea;">v</span> <span style="color: #51afef;">=</span> random.<span style="color: #51afef; font-weight: bold; font-style: italic;">random</span>()
+    <span style="color: #51afef;">while</span> u <span style="color: #51afef;">==</span> <span style="color: #a9a1e1;">0</span>:
+        u <span style="color: #51afef;">=</span> random.<span style="color: #51afef; font-weight: bold; font-style: italic;">random</span>()
+    sqrt_minustwo_logu <span style="color: #51afef;">=</span> math.<span style="color: #51afef; font-weight: bold; font-style: italic;">sqrt</span>(<span style="color: #51afef;">-</span><span style="color: #a9a1e1;">2</span> <span style="color: #51afef;">*</span> math.<span style="color: #51afef; font-weight: bold; font-style: italic;">log</span>(u))
+    two_pi_v <span style="color: #51afef;">=</span> <span style="color: #a9a1e1;">2</span> <span style="color: #51afef;">*</span> math.<span style="color: #a9a1e1; font-style: italic;">pi</span> <span style="color: #51afef;">*</span> v
+    z_0 <span style="color: #51afef;">=</span> sqrt_minustwo_logu <span style="color: #51afef;">*</span> math.<span style="color: #51afef; font-weight: bold; font-style: italic;">cos</span>(two_pi_v)
+    z_1 <span style="color: #51afef;">=</span> sqrt_minustwo_logu <span style="color: #51afef;">*</span> math.<span style="color: #51afef; font-weight: bold; font-style: italic;">sin</span>(two_pi_v)
+    <span style="color: #51afef;">return</span> [z_0, z_1]
+
+<span style="color: #51afef;">def</span> <span style="color: #c678dd;">sample</span>():
+    <span style="color: #51afef;">if</span> (<span style="color: #51afef;">self</span>.<span style="color: #a9a1e1; font-style: italic;">has_spare</span>):
+      <span style="color: #51afef;">self</span>.<span style="color: #a9a1e1; font-style: italic;">sample</span>.<span style="color: #51afef; font-weight: bold; font-style: italic;">append</span>(<span style="color: #51afef;">self</span>.<span style="color: #a9a1e1; font-style: italic;">spare</span>)
+      <span style="color: #51afef;">self</span>.<span style="color: #dcaeea; font-style: italic;">has_spare</span> <span style="color: #51afef;">=</span> <span style="color: #c678dd;">False</span>
+    <span style="color: #51afef;">else</span>:
+      <span style="color: #51afef;">self</span>.<span style="color: #dcaeea; font-style: italic;">spare</span>, <span style="color: #dcaeea;">result</span> <span style="color: #51afef;">=</span> <span style="color: #51afef; font-weight: bold;">getGaussianPair</span>()
+      <span style="color: #51afef;">self</span>.<span style="color: #dcaeea; font-style: italic;">has_spare</span> <span style="color: #51afef;">=</span> <span style="color: #c678dd;">True</span>
+      <span style="color: #51afef;">self</span>.<span style="color: #a9a1e1; font-style: italic;">sample</span>.<span style="color: #51afef; font-weight: bold; font-style: italic;">append</span>(result)
+
+<span style="color: #51afef;">def</span> <span style="color: #c678dd;">getSample</span>(<span style="color: #dcaeea;">sample_size</span>):
+    result <span style="color: #51afef;">=</span> []
+    <span style="color: #51afef;">for</span> <span style="color: #dcaeea;">_</span> <span style="color: #51afef;">in</span> <span style="color: #c678dd; font-weight: bold;">range</span>(sample_size):
+        result.<span style="color: #51afef; font-weight: bold; font-style: italic;">append</span>(<span style="color: #51afef; font-weight: bold;">getGaussianPair</span>()[<span style="color: #a9a1e1;">0</span>])
+        <span style="color: #c678dd; font-weight: bold;">print</span>(result)
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #dcaeea;">sample</span> <span style="color: #51afef;">=</span> <span style="color: #51afef; font-weight: bold;">getSample</span>(number_of_samples)
+
+<span style="color: #dcaeea;">fig</span><span style="color: #51afef;">=</span>plt.<span style="color: #51afef; font-weight: bold; font-style: italic;">figure</span>(<span style="color: #51afef; font-weight: bold;">figsize</span><span style="color: #51afef;">=</span>(<span style="color: #a9a1e1;">4</span>,<span style="color: #a9a1e1;">2</span>))
+<span style="color: #dcaeea;">count</span>, <span style="color: #dcaeea;">bins</span>, <span style="color: #dcaeea;">ignored</span> <span style="color: #51afef;">=</span> plt.<span style="color: #51afef; font-weight: bold; font-style: italic;">hist</span>(sample, <span style="color: #a9a1e1;">30</span>, <span style="color: #51afef; font-weight: bold;">ec</span><span style="color: #51afef;">=</span><span style="color: #98be65;">'orange'</span>, <span style="color: #51afef; font-weight: bold;">fc</span><span style="color: #51afef;">=</span><span style="color: #98be65;">'steelblue'</span>, <span style="color: #51afef; font-weight: bold;">density</span><span style="color: #51afef;">=</span><span style="color: #c678dd;">True</span>, <span style="color: #51afef; font-weight: bold;">histtype</span><span style="color: #51afef;">=</span><span style="color: #98be65;">'barstacked'</span>)
+plt.<span style="color: #51afef; font-weight: bold; font-style: italic;">plot</span>(bins, <span style="color: #a9a1e1;">1</span><span style="color: #51afef;">/</span>(sigma <span style="color: #51afef;">*</span> np.<span style="color: #51afef; font-weight: bold; font-style: italic;">sqrt</span>(<span style="color: #a9a1e1;">2</span> <span style="color: #51afef;">*</span> np.<span style="color: #a9a1e1; font-style: italic;">pi</span>)) <span style="color: #51afef;">*</span>
+               np.<span style="color: #51afef; font-weight: bold; font-style: italic;">exp</span>( <span style="color: #51afef;">-</span> (bins <span style="color: #51afef;">-</span> mu)<span style="color: #51afef;">**</span><span style="color: #a9a1e1;">2</span> <span style="color: #51afef;">/</span> (<span style="color: #a9a1e1;">2</span> <span style="color: #51afef;">*</span> sigma<span style="color: #51afef;">**</span><span style="color: #a9a1e1;">2</span>) ),
+         <span style="color: #51afef; font-weight: bold;">linewidth</span><span style="color: #51afef;">=</span><span style="color: #a9a1e1;">2</span>, <span style="color: #51afef; font-weight: bold;">color</span><span style="color: #51afef;">=</span><span style="color: #98be65;">'violet'</span>, <span style="color: #51afef; font-weight: bold;">alpha</span><span style="color: #51afef;">=</span><span style="color: #a9a1e1;">0.5</span>)
+fig.<span style="color: #51afef; font-weight: bold; font-style: italic;">tight_layout</span>()
+fname<span style="color: #51afef;">=</span><span style="color: #98be65;">"images/expectationsBarChart.png"</span>
+plt.<span style="color: #51afef; font-weight: bold; font-style: italic;">show</span>(fname)
+fname
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Jean-Francois Arbour</p>
+<p class="date">Created: 2022-09-14 Wed 10:57</p>
+</div>
+</body>
+</html>
