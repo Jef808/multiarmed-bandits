@@ -1,0 +1,16 @@
+[
+    {
+        "name": "mab",
+        "label": "Multiarmed Bandit",
+        "parameters": [
+            {
+                "name": "nbOfArms",
+                "label": "Number of Arms",
+                "value": 2,
+                "min": 2,
+                "max": 20,
+                "step": 1
+            }
+        ]
+    }
+]
