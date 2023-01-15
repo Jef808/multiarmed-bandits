@@ -1,17 +1,17 @@
 export type Parameter = {
     name: string;
-    label: () => name; // lodash.autoLabel(name);
     value: number;
-    min: Nullable<number>;
-    max: Nullable<number>;
-    step: Nullable<number>;
+    min?: number;
+    max?: number;
+    step?: number;
 };
 
 export type QueryOptions = {
     numberOfSteps: number;
+    numberOfRepeats: number;
 }
 
-export interface QueryFormModel {
+export interface QueryForm {
     id: string;
     modelName: string;
     modelParameters: {
@@ -24,37 +24,9 @@ export interface QueryFormModel {
     options: QueryOptions;
 }
 
+export type Series = {step: number, value: number}[];
+
 export interface QueryResult {
     id: string;
-    data: Series<{action: string}>[];
+    data: Series[];
 }
-
-export type SeriesValue<V> = V & {
-    step?: number, value: number
-};
-
-export type SeriesOptions = {
-    name: string;
-    label: () => name;
-    color: Nullable<string>;
-}
-
-export type Series<V> = {
-    id: string;
-    data: SeriesValue<V>[];
-    options: Nullable<SeriesOptions>;
-}
-
-export type ChartOptions = {
-    // TODO: Represent data with collection of series Id
-    id: string;
-    label: () => name;
-    backgroundColor?: string;
-}
-
-export type ChartData<PointMeta = {}> = {
-    datasets: Series<PointMeta>[];
-    options?: ChartOptions;
-}
-
-export type WithId<T> = T & { id: string };

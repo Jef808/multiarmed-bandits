@@ -1,7 +1,10 @@
+import type { SeriesValue, Series } from '@/data/types'
 import _, {chunk, reduce, map} from 'underscore';
 
-export function rollingAverage<V extends object>(series: Series<V>, windowSize: number): Series<{}> {
-    const _valueSum = (arr) => _.reduce(arr, (s, v) => s + v.value, 0);
+export function rollingAverage(series: Series, windowSize: number): Series {
+    function _valueSum<V extends SeriesValue>(arr: V[]) {
+        return _.reduce(arr, (s, v) => s + v.value, 0);
+    }
     return _.chain(series)
         .chunk(windowSize)
         .map((win, idx) => ({

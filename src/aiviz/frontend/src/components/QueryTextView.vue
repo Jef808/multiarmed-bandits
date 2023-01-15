@@ -1,6 +1,7 @@
-<script setup lang="ts">
-import { computed, withDefaults } from "vue";
-import type { QueryForm } from "@/data/types";
+<script setup lang='ts'>
+import { computed, withDefaults } from 'vue';
+import type { QueryForm } from '@/data/types';
+
 export interface Props {
   query: QueryForm;
   selected?: boolean;

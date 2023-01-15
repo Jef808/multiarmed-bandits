@@ -25,7 +25,6 @@
 
  const { modelParameters, policyParameters, optionsParameters } =
    storeToRefs(store);
-
  const { submitQuery, setWebSocketUrl, wsReset, wsClose } = queryStore;
  const { queryHistory, resultHistory, currentResult, wsStatus, wsUrl } =
    storeToRefs(queryStore);
@@ -112,10 +111,10 @@
  });
 
  const chartProps = computed(() => ({
-   id: currentResult.value,
-   name: "rewards",
-   values: currentValues.value,
-   width: 1000,
+   id: currentResult.value,  // currentResult is a ref object holding the `id` of the current result.
+   name: "rewards",          // the name of the series containing the `values` below
+   values: currentValues.value,  // the actual data to be rendered on the chart
+   width: 1000,       // format properties from here on down...
    height: 500,
    xPadding: 30,
    yPadding: 20

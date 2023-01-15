@@ -5,10 +5,14 @@ import policiesData from "../data/policies.json" assert { type: "json" };
 import optionsData from "../data/options.json" assert { type: "json" };
 import type { Model, Policy, Options } from "@/data/types";
 
+
+
 export const useFormStore = defineStore("formStore", () => {
     const models = reactive(modelsData);
     const policies = reactive(policiesData);
     const options = reactive(optionsData);
+
+
 
     // SELECTED DATA
     const selected = reactive({
@@ -19,6 +23,8 @@ export const useFormStore = defineStore("formStore", () => {
     const currentModel = ref(models[0].name);
     const currentPolicy = ref(policies[0].name);
 
+
+
     // SELECTION DATA
     const modelSelectionItems = models.map(({ name, label }) => ({
         name,
@@ -28,6 +34,8 @@ export const useFormStore = defineStore("formStore", () => {
         name,
         label,
     }));
+
+
 
     // ON SELECTION
     function onSelectModel(name: string) {
