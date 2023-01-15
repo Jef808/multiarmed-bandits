@@ -1,0 +1,14 @@
+[
+    {
+    name: "numberOfSteps",
+    label: "Number of Steps",
+    value: 1,
+    min: 1,
+    },
+    {
+    name: "numberOfSteps",
+    label: "Number of Episodes",
+    value: 1,
+    min: 1,
+    }
+]

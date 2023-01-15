@@ -1,0 +1,14 @@
+python-path:
+- .
+tricks:
+- tricks.DaemonTrick:
+  args:
+    - 'echo "youppi"'
+  kwargs:
+    patterns:
+    - "./src/**/*.ts"
+    - "./src/**/*.vue"
+    ignore_patterns:
+    - "version.py"
+    ignore_directories: true
+    drop: true

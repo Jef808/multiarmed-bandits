@@ -1,0 +1,14 @@
+[
+    {
+    name: "mab",
+    label: "Multiarmed Bandit",
+    parameters: [
+            {
+        name: "numberOfArms",
+        label: "Number of Arms",
+        value: 2,
+        min: 2,
+            },
+        ],
+    }
+]

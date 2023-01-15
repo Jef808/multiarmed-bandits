@@ -1,0 +1,5 @@
+{
+    models: "models.json",
+    policies: "policies.json",
+    queryOptions: "queryOptions.json"
+}

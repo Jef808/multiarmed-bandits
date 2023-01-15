@@ -13,9 +13,7 @@ yarn-error.log*
 .eslintcache
 */**/dist*
 */**/package-lock.json
-
-.scraps
-.notes
-build
-.cache
-.ccls-cache
+*/**/build/
+*/**/.cache/
+*/**/.ccls-cache/
+*/**/public/

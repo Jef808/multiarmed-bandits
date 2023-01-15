@@ -1,0 +1,71 @@
+#+title: Questions
+
+#+RESULTS:
+[[file:frontend-outline.png]]
+
+* for the `run.sh` script
+[[file:~/projects/ai/run.sh][Current daemon starting script]]
+In this script, I simply launch the backend/websocket server process as a background process of a shell with
+#+begin_src shell
+./path/to/server-executable &
+#+end_src
+and then locally run the local http server through =vite.js= as another background process with
+#+begin_src shell
+cd path/to/frontend_dir && npm run dev
+#+end_src
+** Question: How to use this approach yet cleanly shutdown the websocket connection upon shutdown?
+Problem is, the open connection seems to stay open after not the cleanest shutdowns and/or errors...
+This could be remedied by keeping track of which shell was used to launch the the network, but this could
+obviously be done in a more streamlined way...
+*** [?] Containers / Docker solution or simply a barebone script taking care of exposing control over those subprocesses lifetime?
+* Stores with more dedicated purposes...
+* Split frontend into well-partitionned *modules*
+#+begin_src plantuml :file frontend-outline.png
+title Frontend outline
+
+node "Query viewer" {
+    [Query History] - Explicit
+}
+
+node "Queries" {
+DataQuery - [Query Model]: User Input
+}
+
+package "Task Registration" {
+Task - [Task Queue]
+[Query Model] --> Task
+}
+
+package "Result Registration" {
+[Result Queue] - Result
+}
+
+cloud {
+  [Task Queue] ..> [Backend Worker]
+  [Backend Worker] ..> [Result Queue]
+}
+
+node "ResultData" {
+[ResultData Model] - Data: Some Formatting
+Result -> [ResultData Model]
+[ResultData Model] -> [Result Queue]
+}
+
+node "Result Viewer" {
+  implicit - [Result History]
+  [Result Queue] --> [Result History]: Validation/Routing
+  Explicit == implicit
+}
+
+node "Chart" {
+  [Result History] -> [Chart]: Filter/configure
+}
+#+end_src
+** 1) Forming queries from user input
+*** Model - View - Controller design of forms
+** 2) Sending queries
+** 3) Receiving results
+** 4) Storing queries
+** 5) Storing results
+** 6) Viewing stored queries
+** 7) Viewing stored results
