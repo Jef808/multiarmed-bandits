@@ -30,5 +30,5 @@ export const useQueryHistoryStore = defineStore('queryHistoryStore', () => {
         queryHistory,
         addQuery,
         removeDuplicates
-    }
+    };
 });

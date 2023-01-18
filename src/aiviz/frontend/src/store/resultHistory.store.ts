@@ -21,5 +21,5 @@ export const useResultHistoryStore = defineStore('resultHistoryStore', () => {
         resultHistory,
         addResult,
         removeDuplicates
-    }
+    };
 });

@@ -1,0 +1,4 @@
+#+title: Readme
+
+* TODO
+Generate docs with ~sphinx~, especially for visualizing each object's expected property/values.

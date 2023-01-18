@@ -6,10 +6,15 @@ export type Parameter = {
     step?: number;
 };
 
-export type QueryOptions = {
-    numberOfSteps: number;
-    numberOfRepeats: number;
-}
+export type DataModel = {
+    name: string;
+    label: string;
+    parameters: Parameter[];
+};
+
+export type Model = DataModel;
+export type Policy = DataModel;
+export type Options = DataModel;
 
 export interface QueryForm {
     id: string;
@@ -21,7 +26,7 @@ export interface QueryForm {
     policyParameters: {
         [name: string]: number;
     };
-    options: QueryOptions;
+    options: Options;
 }
 
 export type Series = {step: number, value: number}[];

@@ -1,16 +1,16 @@
 import uniqueId from "lodash.uniqueid";
-import { readonly, ref, watch, type Ref, shallowReactive } from "vue";
+import { readonly, ref, type Ref, shallowReactive } from "vue";
 import { useWebSocket } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { useFormStore } from "@/store/form.store";
 import { validateMsgFront2Back, validateMsgBack2Front } from "@/scripts/messageValidators";
-import type { QueryFormModel, QueryResult, WithId, Model, Policy, Options } from "@/data/types";
+import type { QueryForm, QueryResult, Model, Policy, Options } from "@/data/types";
 
-export const getQuery = (): QueryFormModel => {
+export const getQuery = (): QueryForm => {
     const {
         model: { name: modelName, parameters: mParameters },
         policy: { name: policyName, parameters: pParameters },
-        options: { parameters: oParameters },
+        options: { parameters: Parameters },
     } = useFormStore().currentData;
     return {
         id: uniqueId('query-'),
@@ -23,13 +23,13 @@ export const getQuery = (): QueryFormModel => {
           pParameters.map((param) => [param.name, param.value])
         ),
         options: Object.fromEntries(
-          oParameters.map((param) => [param.name, param.value])
+          Parameters.map((param) => [param.name, param.value])
         ),
     };
 };
 
 export const useQueryStore = defineStore("queryStore", () => {
-    const queryHistory = shallowReactive([] as QueryFormModel[]);
+    const queryHistory = shallowReactive([] as QueryForm[]);
     const resultHistory = shallowReactive([] as QueryResult[]);
 
     const currentResult = ref("");
