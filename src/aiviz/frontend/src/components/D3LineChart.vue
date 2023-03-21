@@ -1,6 +1,10 @@
+<script lang="ts">
+ export default { name: 'D3LineChart' }
+</script>
+
 <script setup lang="ts">
  import * as d3 from 'd3';
- import { withDefaults, ref, computed, type PropType, watch, onMounted, onBeforeMount, onBeforeUpdate } from "vue";
+ import { computed, onMounted, onBeforeUpdate } from "vue";
 
  export interface SeriesProps {
      name: string;
@@ -47,22 +51,19 @@
      return [props.height - 2 * props.yPadding, 0];
 });
 
-const scales = computed(() => {
+ const scales = computed(() => {
      if (props.values.length === 0) {
-         console.warn("values is empty");
-         return;
+         // console.warn("values is empty");
+         throw "values is empty";
      }
-     const X = d3.scaleLinear()
-       .domain([
-           d3.min(props.values, ({step}) => step),
-           d3.max(props.values, ({step}) => step)
-       ])
-       .rangeRound(xRange.value);
-     const Y = d3.scaleLinear()
-                 .domain(
-                     d3.extent(props.values, ({value}) => value)
-                 ).nice()
-                 .range(yRange.value);
+     const X = d3.scaleLinear().domain([
+         d3.min(props.values, ({step}) => step as number),
+         d3.max(props.values, ({step}) => step as number)
+     ]).rangeRound(xRange.value);
+     const Y = d3.scaleLinear().domain(
+              d3.extent(props.values, ({value}) => value)
+          ).nice()
+          .range(yRange.value);
      return { X, Y };
  });
  /* */
@@ -75,20 +76,20 @@ const scales = computed(() => {
  const path = computed(() => {
      const { X, Y } = scales.value;
      return d3.line()
-              .x(d => X(d.step))
-              .y(d => Y(d.value));
+              .x(d => X(d[0]))
+              .y(d => Y(d[1]));
  });
  /* */
  const line = computed(() => {
-     return path.value(props.values);
+     return path.value(props.values.map(d => [d.step, d.value]));
  });
-/* */
-function onDebug() {
-  console.log("values", props.values);
-  console.log("path.d", line);
-  renderAxis();
-}
- </script>
+ /* */
+ function onDebug() {
+     console.log("values", props.values);
+     console.log("path.d", line);
+     renderAxis();
+ }
+</script>
 
 <template>
   <div>
@@ -108,7 +109,8 @@ function onDebug() {
              :transform="xAxisTransformAttr"
             ></g>
             <g class="axes-y"></g>
-            <path class="chart-line" :d="line" />
+            <path class="chart-line">
+                  <!--:d="/* line" /> -->
         </g>
     </svg>
   </div>

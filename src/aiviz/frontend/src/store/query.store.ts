@@ -1,45 +1,62 @@
 import uniqueId from "lodash.uniqueid";
-import { readonly, ref, type Ref, shallowReactive } from "vue";
+import { readonly, ref, shallowReactive } from "vue";
 import { useWebSocket } from "@vueuse/core";
-import { defineStore } from "pinia";
+import { defineStore, storeToRefs } from "pinia";
 import { useFormStore } from "@/store/form.store";
-import { validateMsgFront2Back, validateMsgBack2Front } from "@/scripts/messageValidators";
-import type { QueryForm, QueryResult, Model, Policy, Options } from "@/data/types";
+import { validateMsgBack2Front, ValidationResult } from "@/scripts/messageValidators";
+import type { Query, QueryForm, QueryResult, Parameter } from "@/data/types";
 
-export const getQuery = (): QueryForm => {
+function cmpEqual(a: QueryForm) {
+    const _cmpEqual = (
+        queryParameters: Record<string, number>,
+        queryFormParameters: Parameter[]
+    ): boolean => {
+        return Object.entries(queryParameters).every(
+            ([name, value]) => queryFormParameters.find(p => p.name === name)?.value === value
+        )
+    }
+    return (b: Query) => {
+        return a.model.name === b.modelName && a.policy.name === b.policyName
+            && _cmpEqual(b.modelParameters, a.model.parameters)
+            && _cmpEqual(b.policyParameters, a.policy.parameters)
+            && _cmpEqual(b.options, a.options);
+    }
+}
+
+function makeQuery(queryForm: QueryForm): Query {
     const {
-        model: { name: modelName, parameters: mParameters },
-        policy: { name: policyName, parameters: pParameters },
-        options: { parameters: Parameters },
-    } = useFormStore().currentData;
+        model: { name: modelName, parameters: modelParameters },
+        policy: { name: policyName, parameters: policyParameters },
+        options,
+    } = queryForm;
     return {
         id: uniqueId('query-'),
         modelName,
         modelParameters: Object.fromEntries(
-          mParameters.map((param) => [param.name, param.value])
+            modelParameters.map((param) => [param.name, param.value])
         ),
         policyName,
         policyParameters: Object.fromEntries(
-          pParameters.map((param) => [param.name, param.value])
+            policyParameters.map((param) => [param.name, param.value])
         ),
         options: Object.fromEntries(
-          Parameters.map((param) => [param.name, param.value])
+            options.map((param) => [param.name, param.value])
         ),
     };
 };
 
 export const useQueryStore = defineStore("queryStore", () => {
-    const queryHistory = shallowReactive([] as QueryForm[]);
-    const resultHistory = shallowReactive([] as QueryResult[]);
+    const queryData = shallowReactive(new Map<Query['id'], Query>());
+    const resultsData = shallowReactive(new Map<Query['id'], QueryResult>())
+    const currentId = ref("")
 
-    const currentResult = ref("");
+    const { model, policy, options } = storeToRefs(useFormStore());
 
     const wsUrl = ref("ws://localhost:8080");
 
     // A websocket for two-way communication with the backend
     const {
         status: wsStatus,
-        data: wsData,
         send: wsSend,
         open: wsOpen,
         close,
@@ -62,29 +79,23 @@ export const useQueryStore = defineStore("queryStore", () => {
             console.log("Successfully connected to WebSocket at ", wsUrl.value);
         },
         onMessage: (_, event) => {
-          if (event.data === "pong")
-            return;
-
-          console.log("Received", event);
-
-          try {
-            const rep = JSON.parse(event.data);
-            const validationResult = validateMsgBack2Front(rep);
-
-            if (validationResult !== 'Ok') {
-                console.error("Error while receiving response ", validationResult, JSON.stringify(rep, null, 2));
+            if (event.data === "pong") {
                 return;
             }
-            else {
-                console.log(validationResult);
+
+            console.log("WS: Received message");
+            const { validation, response } = validateMsgBack2Front(event.data);
+
+            if (validation !== ValidationResult.Ok) {
+                console.error("WS: Invalid result:", validation, response ? JSON.stringify(response, null, 2) : event.data);
+                return;
             }
 
-            resultHistory.push(rep);
-            currentResult.value = rep.id;
-          }
-          catch (err) {
-            console.error("Failed to parse data of response", event);
-          }
+            const rep = JSON.parse(event.data);
+            console.log("WS: received response:", rep);
+
+            resultsData.set(rep.id, rep);
+            currentId.value = rep.id;
         },
         onDisconnected: (_: WebSocket, event: CloseEvent) => {
             console.warn("Web Socket Disconnected", event);
@@ -104,85 +115,59 @@ export const useQueryStore = defineStore("queryStore", () => {
     }
 
     /**
-     * Send the curent query to the backend through the WebSocket
+     * Send the current query to the backend through the WebSocket
      */
-    async function submitQuery(query: QueryForm) {
-        const nbQueries = queryHistory.length;
+    async function submit() {
+        const queryForm = { model: model.value, policy: policy.value, options: options.value };
 
-        const duplicateEntry = queryHistory.find((q) => {
-          if (query.modelName !== q.modelName
-            || query.policyName !== q.policyName) {
-              return false;
+        const _cmpEqual = cmpEqual(queryForm);
+
+        // Immediately get results from cache if query has already been processed.
+        for (const [id, q] of queryData.entries()) {
+            if (_cmpEqual(q)) {
+                console.log("Query found in cache:", id);
+                currentId.value = id;
+                return;
             }
-          if (!Object.entries(query.modelParameters)
-            .every((keyVal) => q.modelParameters[keyVal[0] as keyof Model] === keyVal[1])) {
-            return false;
-          }
-          if (!Object.entries(query.policyParameters)
-            .every((keyVal) => q.policyParameters[keyVal[0] as keyof Policy] === keyVal[1])) {
-            return false;
-          }
-          if (!Object.entries(query.options)
-             .every((keyVal) => q.options[keyVal[0] as keyof Options] === keyVal[1])) {
-            return false;
-          }
-          return true;
-        });
-
-        // Do not resend the query if it was previously computed.
-        if (duplicateEntry !== undefined) {
-            console.log("Found query in cache");
-            currentResult.value = duplicateEntry.id;
-            return;
         }
 
-        // Otherwise, send the query through the websocket (if its status is okay).
-        if (wsStatus.value !== "OPEN") {
+        // Create new query otherwise
+        const query = makeQuery(queryForm);
+
+        // If websocket is still connecting, don't try sending request.
+        if (wsStatus.value === 'CONNECTING') {
+            console.error(
+                "submitQuery called with websocket still connecting, query will not be sent.",
+                ws
+            );
+            return;
+        }
+        // If websocket status is anything but 'OPEN', emit a warning.
+        if (wsStatus.value !== 'OPEN') {
             console.warn(
                 "submitQuery called with non-open websocket, query will be buffered",
                 ws
             );
         }
 
-        try {
-            const req = JSON.stringify(query);
-            const validationResult = validateMsgFront2Back(req);
+        // Submit query and add it to history if no error occurs.
+        wsSend(JSON.stringify(query));
+        queryData.set(query.id, query);
 
-            if (validationResult !== 'Ok') {
-                console.error("Error while validating: ", validationResult, req);
-                return;
-            }
-            else {
-                console.log(validationResult);
-            }
-
-            wsSend(req);
-            queryHistory.push(query);
-            console.log("Query sent");
-        } catch (err) {
-            console.error("Error while sending query", query.id, err);
-            queryHistory.length = nbQueries;
-            if (resultHistory.length !== queryHistory.length) {
-                console.warn(
-                    "WARNING: query.store.ts: 'resultHistory' stack is out of sync with queryHistory"
-                );
-            }
-        }
+        console.log("Submitted query", query.id);
     }
 
-    const setWebSocketUrl = (url: string) => {
-        wsUrl.value = url;
-    };
+    // const setWebSocketUrl = (url: string) => {
+    //     wsUrl.value = url;
+    // };
 
     return {
         wsClose,
         wsReset,
         wsStatus: readonly(wsStatus),
-        wsUrl: readonly(wsUrl),
-        submitQuery,
-        queryHistory: readonly(queryHistory),
-        resultHistory: readonly(resultHistory),
-        currentResult: readonly(currentResult),
-        setWebSocketUrl,
+        submit,
+        queryData: readonly(queryData),
+        resultsData: readonly(resultsData),
+        currentId: readonly(currentId),
     };
 });

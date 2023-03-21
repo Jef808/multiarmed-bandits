@@ -1,10 +1,27 @@
 export type Parameter = {
     name: string;
+    label: string;
     value: number;
-    min?: number;
-    max?: number;
-    step?: number;
+    min: number;
+    max: number;
+    step: number;
 };
+
+export enum Category {
+    models = 'models',
+    policies = 'policies',
+    options = 'options'
+};
+export type CategoryName = 'models' | 'policies' | 'options';
+
+export type ModelName = 'mab';
+export type PolicyName = 'epsilonGreedy' | 'ucb';
+
+export type Models = ['mab'];
+export type Policies = ['epsilonGreedy', 'ucb'];
+
+// export type ModelName = Models.mab;
+// export type PolicyName = Policies.epsilonGreedy | Policies.ucb
 
 export type DataModel = {
     name: string;
@@ -14,24 +31,28 @@ export type DataModel = {
 
 export type Model = DataModel;
 export type Policy = DataModel;
-export type Options = DataModel;
+export type Option = Parameter;
 
 export interface QueryForm {
+    model: Model;
+    policy: Policy;
+    options: Option[];
+}
+
+export interface Query {
     id: string;
     modelName: string;
-    modelParameters: {
-        [name: string]: number;
-    };
+    modelParameters: { [paramName: string]: number };
     policyName: string;
-    policyParameters: {
-        [name: string]: number;
-    };
-    options: Options;
+    policyParameters: { [paramName: string]: number };
+    options: { [optionName: string]: number };
 }
 
 export type Series = {step: number, value: number}[];
 
 export interface QueryResult {
-    id: string;
-    data: Series[];
+    data: {
+        name: string,
+        values: Series
+    }[];
 }

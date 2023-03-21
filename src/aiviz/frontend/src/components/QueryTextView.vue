@@ -1,9 +1,9 @@
 <script setup lang='ts'>
 import { computed, withDefaults } from 'vue';
-import type { QueryForm } from '@/data/types';
+import type { Query } from '../data/types';
 
 export interface Props {
-  query: QueryForm;
+  query: Query;
   selected?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
@@ -27,7 +27,7 @@ const optionsParameters = computed(() => {
 });
 
 // Change variant when selected?
-const variant = computed(() => {});
+// const variant = computed(() => {});
 </script>
 
 <template>

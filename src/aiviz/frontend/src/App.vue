@@ -1,123 +1,105 @@
 <script setup lang="ts">
- import { computed, reactive, ref, onMounted } from "vue";
+ import { computed, ref } from "vue";
  import { vOnClickOutside } from "@vueuse/components";
  import { storeToRefs } from "pinia";
- import { useFormStore } from "@/store/form.store";
- import { getQuery, useQueryStore } from "@/store/query.store";
- import QueryTextView from "@/components/QueryTextView.vue";
- import ParametersForm from "@/components/ParametersForm.vue";
- import D3LineChart from "@/components/D3LineChart.vue";
- import type { QueryResult } from "@/data/types";
+ import type { ModelName, PolicyName } from "./data/types";
+ import { useFormStore } from "./store/form.store";
+ import { useQueryStore } from "./store/query.store";
+ import QueryTextView from "./components/QueryTextView.vue";
+ import ParametersForm from "./components/ParametersForm.vue";
+//  import D3LineChart from "./components/D3LineChart.vue";
 
- const store = useFormStore();
- const queryStore = useQueryStore();
+ //const formStore = useFormStore();
+ //const queryStore = useQueryStore();
 
  const {
-   initialModelName,
-   initialPolicyName,
-   modelSelectionItems,
-   policySelectionItems,
+   modelNames,
+   policyNames,
+   options,
    onUpdate,
-   showRaw,
-   onSelectModel,
-   onSelectPolicy,
- } = store;
+   onSelect,
+ } = useFormStore();
+ const { model, policy } =
+     storeToRefs(useFormStore());
 
- const { modelParameters, policyParameters, optionsParameters } =
-   storeToRefs(store);
- const { submitQuery, setWebSocketUrl, wsReset, wsClose } = queryStore;
- const { queryHistory, resultHistory, currentResult, wsStatus, wsUrl } =
-   storeToRefs(queryStore);
+ const { submit, wsReset, wsClose } = useQueryStore();
+ const { currentId, wsStatus, queryData, resultsData } =
+   storeToRefs(useQueryStore());
 
- const wsUrlRef = ref(wsUrl);
- const debug = ref(true);
+ // const selectedModel = computed(() => currentData.value.model);
+ // const selectedPolicy = computed(() => currentData.value.policy);
+
+ // const wsUrlRef = ref(wsUrl);
+ const debug = ref(false);
  const showWsInfo = ref(true);
-
  const panel = ref("");
 
- const selectedModel = ref(initialModelName);
- const selectedPolicy = ref(initialPolicyName);
-
  const haveResult = computed(() => {
-     const ret = currentResult.value !== undefined && currentResult.value !== "";
+     const ret = currentId.value !== undefined && currentId.value !== "";
      if (ret) {
-         console.log("Have result: ", currentResult.value);
+         console.log("Have result: ", currentId.value);
      }
      return ret;
  });
 
- function selectModel(name: string) {
-   selectedModel.value = name;
-   onSelectModel(name);
+ function onSelectModel(name: ModelName) {
+     onSelect('models', name);
  }
- function selectPolicy(name: string) {
-   selectedPolicy.value = name;
-   onSelectPolicy(name);
+ function onSelectPolicy(name: PolicyName) {
+     onSelect('policies', name);
  }
-
  function updateModel(values: number[]) {
-   onUpdate("model", values);
-   panel.value = "policy";
+   onUpdate('models', values);
+   panel.value = 'policy';
  }
  function updatePolicy(values: number[]) {
-   onUpdate("policy", values);
-   panel.value = "options";
+   onUpdate('policies', values);
+   panel.value = 'options';
  }
  function updateOptions(values: number[]) {
-   onUpdate("options", values);
-   panel.value = "";
+   onUpdate('options', values);
+   panel.value = '';
  }
-
  function onCancel() {
-   panel.value = "";
+   panel.value = '';
  }
-
  function onSubmitQuery() {
-   const query = getQuery();
-   console.log("Submiting query", query);
-   submitQuery(query);
+   submit();
  }
-
- function onSubmitWsUrl() {
-   if (wsUrlRef.value === wsUrl.value) return;
-   setWebSocketUrl(wsUrlRef.value);
- }
-
  function onResetWs() {
    wsReset();
  }
-
  function onCloseWs() {
    wsClose("Explicit Stop");
  }
-
  const wsColor = computed(() => {
-   const { [`${wsStatus.value}`]: color } = {
-     OPEN: "green-lighten-4",
-     CONNECTING: "yellow-accent-1",
-     CLOSED: "red-darken-2",
-   };
-   return color;
+     switch (wsStatus.value) {
+        case 'OPEN': return 'green-lighten-4';
+        case 'CONNECTING': return 'yellow-accent-1';
+        case 'CLOSED': return 'red-darken-2';
+        default: throw 'Invalid wsState';
+     }
  });
 
+ // Compute the value of the first series of the last result.
  const currentValues = computed(() => {
-   const resultId = currentResult.value;
+   const resultId = currentId.value;
    console.log("Result Id: ", resultId);
-   const result = resultHistory.value.find((r) => {
-     return r.id === resultId;
-   });
+
+   const result = resultsData.value.get(resultId).data[0].values ?? [];
    console.log("Result: ", result);
-   return result.data[0].values;
+
+   return result;
  });
 
  const chartProps = computed(() => ({
-   id: currentResult.value,  // currentResult is a ref object holding the `id` of the current result.
-   name: "rewards",          // the name of the series containing the `values` below
-   values: currentValues.value,  // the actual data to be rendered on the chart
-   width: 1000,       // format properties from here on down...
+   id: currentId.value,  // the id of the corresponding query
+   name: "rewards",      // the name of the series containing the results
+   values: currentValues.value,
+   width: 1000,
    height: 500,
    xPadding: 30,
-   yPadding: 20
+   yPadding: 30
  }));
 </script>
 
@@ -131,7 +113,7 @@
               <v-container
                 v-if="haveResult"
               >
-                <D3LineChart v-bind="chartProps"></D3LineChart>
+                  <D3LineChart v-bind="chartProps"></D3LineChart>
               </v-container>
               <v-container
                 v-else
@@ -143,9 +125,10 @@
           <v-row v-if="debug && haveResult">
             <v-col cols="6">
               <h2>Query History</h2>
-              {{ queryHistory.length }} queries
-              <v-list v-if="queryHistory.length > 0">
-                <v-list-item v-for="(query, idx) in queryHistory" :key="idx">
+              {{ queryData.size }} queries
+              <v-list v-if="queryData.size > 0">
+                <v-list-item v-for="(query, idx) in queryData.values()" :key="idx">
+                    <span>Query {{ idx }}:</span>
                   <QueryTextView :query="query"></QueryTextView>
                 </v-list-item>
               </v-list>
@@ -154,16 +137,16 @@
               <v-row>
                 <v-col cols="auto">
                   <h2>Result History</h2>
-                  {{ resultHistory.length }} results
+                  {{ resultsData.size }} results
                 </v-col>
               </v-row>
               <v-row>
                 <v-col cols="auto">
                   <h2>Current Result</h2>
-                  {{ currentResult }}
+                  {{ currentId }}
                   <v-list>
-                    <v-list-item v-for="(result, idx) in resultHistory" :key="idx">
-                      <pre>{{ result.data }}</pre>
+                    <v-list-item v-for="(result, idx) in resultsData.values().map(v=>v.data[0].values())" :key="idx">
+                      <pre>{{ result }}</pre>
                     </v-list-item>
                   </v-list>
                 </v-col>
@@ -178,15 +161,15 @@
                 <v-expansion-panel class="text-grey" value="model" title="MODEL">
                   <v-expansion-panel-text class="text-primary">
                     <v-select
-                      :model-value="selectedModel"
-                      @update:modelValue="selectModel"
-                      :items="modelSelectionItems"
+                      :model-value="model.name"
+                      @update:modelValue="onSelectModel"
+                      :items="modelNames"
                       item-title="label"
                       item-value="name"
                     ></v-select>
                     <ParametersForm
-                      :data-name="selectedModel"
-                      :items="modelParameters"
+                      :data-name="model.name"
+                      :items="model.parameters"
                       @change="updateModel"
                       @cancel="onCancel"
                     ></ParametersForm>
@@ -195,15 +178,15 @@
                 <v-expansion-panel class="text-grey" value="policy" title="POLICY">
                   <v-expansion-panel-text class="text-primary">
                     <v-select
-                      :model-value="selectedPolicy"
-                      @update:modelValue="selectPolicy"
-                      :items="policySelectionItems"
+                      :model-value="policy.name"
+                      @update:modelValue="onSelectPolicy"
+                      :items="policyNames"
                       item-title="label"
                       item-value="name"
                     ></v-select>
                     <ParametersForm
-                      :data-name="selectedPolicy"
-                      :items="policyParameters"
+                      :data-name="policy.name"
+                      :items="policy.parameters"
                       @change="updatePolicy"
                       @cancel="onCancel"
                     ></ParametersForm>
@@ -212,7 +195,7 @@
                 <v-expansion-panel class="text-grey" value="options" title="OPTIONS">
                   <v-expansion-panel-text class="text-primary">
                     <ParametersForm
-                      :items="optionsParameters"
+                      :items="options"
                       @change="updateOptions"
                       @cancel="onCancel"
                     ></ParametersForm>
@@ -239,8 +222,7 @@
                   </v-row>
                 </v-expansion-panel-title>
                 <v-expansion-panel-text>
-                  <v-form @submit.prevent="onSubmitWsUrl">
-                    <v-text-field label="Url" v-model="wsUrlRef"></v-text-field>
+                  <v-form>
                     <v-row>
                       <v-col cols="12" class="d-flex justify-end space-between">
                         <v-row>
