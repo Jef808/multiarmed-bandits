@@ -50,9 +50,7 @@ export interface Query {
 
 export type Series = {step: number, value: number}[];
 
-export interface QueryResult {
-    data: {
-        name: string,
-        values: Series
-    }[];
-}
+export type QueryResult = {
+    name: string,
+    values: Series
+}[];

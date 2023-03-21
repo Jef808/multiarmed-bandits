@@ -1,10 +1,6 @@
-<script lang="ts">
- export default { name: 'D3LineChart' }
-</script>
-
 <script setup lang="ts">
  import * as d3 from 'd3';
- import { computed, onMounted, onBeforeUpdate } from "vue";
+ import { computed, onMounted, onBeforeUpdate, ref, type Ref } from "vue";
 
  export interface SeriesProps {
      name: string;
@@ -14,7 +10,7 @@
  export interface Props {
      id: string;
      name: string;
-     values: {action: string, step: number, value: number}[];
+     values: {x: number, y: number}[];
      width: number;
      height: number;
      xPadding: number;
@@ -22,6 +18,9 @@
  }
 
  const props = defineProps<Props>();
+
+ const xAxisRef = ref(null);
+ const yAxisRef = ref(null);
 
  onMounted(() => {
      renderAxis();
@@ -43,6 +42,10 @@
      return `translate(0,${props.height-2*props.yPadding})`;
  });
 
+ const yAxisTransformAttr = computed(() => {
+     return `rotate(90)`;
+ })
+
  const xRange = computed(() => {
      return [0, props.width - 2 * props.xPadding];
 });
@@ -56,21 +59,26 @@
          // console.warn("values is empty");
          throw "values is empty";
      }
-     const X = d3.scaleLinear().domain([
-         d3.min(props.values, ({step}) => step as number),
-         d3.max(props.values, ({step}) => step as number)
-     ]).rangeRound(xRange.value);
-     const Y = d3.scaleLinear().domain(
-              d3.extent(props.values, ({value}) => value)
-          ).nice()
-          .range(yRange.value);
+     const X = d3.scaleLinear()
+                 .domain([
+                     d3.min(props.values.map(({x}) => x)),
+                     d3.max(props.values.map(({x}) => x))
+                 ]).rangeRound(xRange.value);
+     const Y = d3.scaleLinear()
+                 .domain(
+                     d3.extent(props.values.map(({y}) => y))
+                 ).nice()
+                 .range(yRange.value);
      return { X, Y };
  });
  /* */
  function renderAxis() {
      const { X, Y } = scales.value;
-     d3.select("g.axes-x").call(d3.axisBottom(X));
-     d3.select("g.axes-y").call(d3.axisLeft(Y));
+     xAxisRef.value = d3.select<SVGGElement, unknown>("g.axes-x");
+     xAxisRef.value.call(d3.axisBottom(X));
+     yAxisRef.value = d3.select<SVGGElement, unknown>("g.axes-y");
+     yAxisRef.value.call(d3.axisBottom(Y));
+     /// d3.select("g.axes-y").call(d3.axisLeft(Y));
  }
  /* */
  const path = computed(() => {
@@ -81,7 +89,7 @@
  });
  /* */
  const line = computed(() => {
-     return path.value(props.values.map(d => [d.step, d.value]));
+     return path.value(props.values.map(({x, y}) => ([x, y])));
  });
  /* */
  function onDebug() {
@@ -107,10 +115,14 @@
         <g :transform="chartTransformAttr" class="chart">
             <g class="axes-x"
              :transform="xAxisTransformAttr"
+             :ref="xAxisRef"
             ></g>
-            <g class="axes-y"></g>
-            <path class="chart-line">
-                  <!--:d="/* line" /> -->
+            <g class="axes-y"
+            :transform="yAxisTransformAttr"
+            :ref="yAxisRef">
+            </g>
+            <path class="chart-line"
+                  :d="line" />
         </g>
     </svg>
   </div>

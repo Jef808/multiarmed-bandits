@@ -7,7 +7,7 @@
  import { useQueryStore } from "./store/query.store";
  import QueryTextView from "./components/QueryTextView.vue";
  import ParametersForm from "./components/ParametersForm.vue";
-//  import D3LineChart from "./components/D3LineChart.vue";
+ import D3LineChart from "./components/D3LineChart.vue";
 
  //const formStore = useFormStore();
  //const queryStore = useQueryStore();
@@ -30,7 +30,7 @@
  // const selectedPolicy = computed(() => currentData.value.policy);
 
  // const wsUrlRef = ref(wsUrl);
- const debug = ref(false);
+ const debug = ref(true);
  const showWsInfo = ref(true);
  const panel = ref("");
 
@@ -86,16 +86,16 @@
    const resultId = currentId.value;
    console.log("Result Id: ", resultId);
 
-   const result = resultsData.value.get(resultId).data[0].values ?? [];
-   console.log("Result: ", result);
+   const results = resultsData.value.get(resultId);
+   console.log("Result: ", results);
 
-   return result;
+   return results[0].values;   // Pick the first series' values
  });
 
  const chartProps = computed(() => ({
    id: currentId.value,  // the id of the corresponding query
    name: "rewards",      // the name of the series containing the results
-   values: currentValues.value,
+   values: currentValues.value.map(({step, value}) => ({ x: step, y: value })),
    width: 1000,
    height: 500,
    xPadding: 30,
@@ -113,12 +113,14 @@
               <v-container
                 v-if="haveResult"
               >
-                  <D3LineChart v-bind="chartProps"></D3LineChart>
+                  <D3LineChart
+                      v-bind="chartProps"
+                  ></D3LineChart>
               </v-container>
               <v-container
                 v-else
               >
-                No result to display...
+                No results to display...
               </v-container>
             </v-col>
           </v-row>
@@ -128,8 +130,7 @@
               {{ queryData.size }} queries
               <v-list v-if="queryData.size > 0">
                 <v-list-item v-for="(query, idx) in queryData.values()" :key="idx">
-                    <span>Query {{ idx }}:</span>
-                  <QueryTextView :query="query"></QueryTextView>
+                    <span>{{ query.id }}:</span>
                 </v-list-item>
               </v-list>
             </v-col>
@@ -145,8 +146,8 @@
                   <h2>Current Result</h2>
                   {{ currentId }}
                   <v-list>
-                    <v-list-item v-for="(result, idx) in resultsData.values().map(v=>v.data[0].values())" :key="idx">
-                      <pre>{{ result }}</pre>
+                    <v-list-item v-for="(value, idx) in currentValues" :key="idx">
+                        <pre>{{ value }}</pre>
                     </v-list-item>
                   </v-list>
                 </v-col>

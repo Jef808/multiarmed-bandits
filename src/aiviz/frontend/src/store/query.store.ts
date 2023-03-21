@@ -94,7 +94,7 @@ export const useQueryStore = defineStore("queryStore", () => {
             const rep = JSON.parse(event.data);
             console.log("WS: received response:", rep);
 
-            resultsData.set(rep.id, rep);
+            resultsData.set(rep.id, rep.data);
             currentId.value = rep.id;
         },
         onDisconnected: (_: WebSocket, event: CloseEvent) => {
