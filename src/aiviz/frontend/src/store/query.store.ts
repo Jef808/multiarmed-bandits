@@ -1,5 +1,5 @@
 import uniqueId from "lodash.uniqueid";
-import { readonly, ref, shallowReactive } from "vue";
+import { reactive, readonly, ref, shallowReactive } from "vue";
 import { useWebSocket } from "@vueuse/core";
 import { defineStore, storeToRefs } from "pinia";
 import { useFormStore } from "@/store/form.store";
@@ -162,6 +162,7 @@ export const useQueryStore = defineStore("queryStore", () => {
     // };
 
     return {
+        wsUrl,
         wsClose,
         wsReset,
         wsStatus: readonly(wsStatus),

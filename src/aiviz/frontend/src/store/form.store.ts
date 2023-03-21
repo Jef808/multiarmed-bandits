@@ -1,4 +1,4 @@
-import { reactive, toRef } from "vue";
+import { computed, readonly, reactive, ref, toRef } from "vue";
 import { defineStore } from "pinia";
 import { items as _models } from "../data/models.json" assert { type: "json" };
 import { items as _policies } from "../data/policies.json" assert { type: "json" };
@@ -16,9 +16,20 @@ export const useFormStore = defineStore("formStore", () => {
     const policies = reactive(_policies as DataModel[]);
     const options = reactive(_options as Option[]);
 
+    const selectedModelName = ref(models[0].name)
+    const selectedPolicyName = ref(policies[0].name)
+
+    const selectedModel = computed(() => {
+        return models.find((m) => m.name === selectedModelName.value) as DataModel;
+    });
+    const selectedPolicy = computed(() => {
+        return policies.find((p) => p.name === selectedPolicyName.value) as DataModel;
+    });
+    // let selectedModel = ref(models[0]);
+    // let selectedPolicy = ref(policies[0]);
     const selected = {
-        model: toRef(models, 0),
-        policy: toRef(policies, 0)
+        model: ref(models[0]),
+        policy: ref(policies[0])
     };
 
     function updateModel(values: number[]) {
@@ -57,11 +68,11 @@ export const useFormStore = defineStore("formStore", () => {
     }
 
     // ON SELECTION
-    function selectModel(model: ModelName) {
-        selected.model = toRef(models, models.findIndex((m) => m.name === model));
+    function selectModel(name: ModelName) {
+        selectedModelName.value = name;
     }
-    function selectPolicy(policy: PolicyName) {
-        selected.policy = toRef(policies, policies.findIndex((p) => p.name === policy));
+    function selectPolicy(name: PolicyName) {
+        selectedPolicyName.value = name;
     }
     function onSelect(category: CategoryName, name: string) {
         switch (category) {
@@ -75,10 +86,10 @@ export const useFormStore = defineStore("formStore", () => {
     }
 
     return {
-        modelNames: models.map(({name})=>name),
-        policyNames: policies.map(({name})=>name),
-        model: selected.model,
-        policy: selected.policy,
+        models: readonly(models),
+        policies: readonly(policies),
+        model: selectedModel,
+        policy: selectedPolicy,
         options,
         onUpdate,
         onSelect
