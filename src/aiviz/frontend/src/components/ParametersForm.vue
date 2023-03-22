@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { reactive, watch } from "vue";
-import type { Parameter } from "../data/types";
+import {reactive, watch} from "vue";
+import type {Parameter} from "../data/types";
 
 export interface Props {
   dataName?: string;
@@ -20,13 +20,13 @@ const emit = defineEmits<Emits>();
 
 // local copy of each values into an array
 // TODO: Parse input coming from the textfield as int64 (same as slider input)
-const modelValues = reactive(props.items.map(({ value }) => value));
+const modelValues = reactive(props.items.map(({value}) => value));
 
 // Repopulate `modelValues` upon change of props.dataName
 // Note: Cannot watch a property of a reactive object, so use a getter as watched value
 watch(
   () => props.dataName,
-  () => resetModelValues()
+  () => resetModelValues(),
 );
 
 function resetModelValues() {

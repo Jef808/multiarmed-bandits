@@ -1,30 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { storeToRefs } from "pinia";
-import type { ModelName, PolicyName } from "./data/types";
+import {computed, ref} from "vue";
+import {storeToRefs} from "pinia";
 import QueryForm from "./components/QueryForm.vue";
-import { useFormStore } from "./store/form.store";
-import { useQueryStore } from "./store/query.store";
+import {useQueryStore} from "./store/query.store";
 import QueryTextView from "./components/QueryTextView.vue";
-import ParametersForm from "./components/ParametersForm.vue";
 import D3LineChart from "./components/D3LineChart.vue";
 import D3ViolinChart from "./components/D3ViolinChart.vue";
-import ArmFactory, { type Arm, type Sample } from "./scripts/arm";
+import ArmFactory, {type Arm, type Sample} from "./scripts/arm";
 
-//const formStore = useFormStore();
-//const queryStore = useQueryStore();
+const queryStore = useQueryStore();
 
-const { options, onUpdate, onSelect } = useFormStore();
-const { models, policies, model, policy } = storeToRefs(useFormStore());
-
-const selectedModel = ref(models.value[0].name);
-const selectedPolicy = ref(policies.value[0].name);
-
-const justSelected = ref(false);
-
-const { submit, wsReset, wsClose } = useQueryStore();
-const { currentId, wsStatus, queryData, resultsData, wsUrl } = storeToRefs(
-  useQueryStore()
+const {wsReset, wsClose} = useQueryStore();
+const {currentId, wsStatus, queryData, resultsData, wsUrl} = storeToRefs(
+  useQueryStore(),
 );
 
 const debug = ref(true);
@@ -39,46 +27,6 @@ const haveResult = computed(() => {
   return ret;
 });
 
-function onSelectModel() {
-  onSelect("models", selectedModel.value);
-  justSelected.value = true;
-}
-
-function onSelectPolicy() {
-  onSelect("policies", selectedPolicy.value);
-  justSelected.value = true;
-}
-
-function onUpdateModel(values: number[]) {
-  onUpdate("models", values);
-  panel.value = "policy";
-  justSelected.value = false;
-}
-
-function onUpdatePolicy(values: number[]) {
-  onUpdate("policies", values);
-  panel.value = "options";
-  justSelected.value = false;
-}
-
-function onUpdateOptions(values: number[]) {
-  onUpdate("options", values);
-  panel.value = "";
-  justSelected.value = false;
-}
-
-function onCancel() {
-  if (justSelected) {
-    justSelected.value = false;
-    return;
-  }
-  panel.value = "";
-}
-
-function onSubmitQuery() {
-  submit();
-}
-
 function onResetWs() {
   wsReset();
 }
@@ -87,10 +35,10 @@ function onCloseWs() {
   wsClose("Explicit Stop");
 }
 
-function onDebug() {
-  console.log("model: ", model);
-  console.log("policy: ", policy);
-}
+<!-- function onDebug() { -->
+<!--   console.log("model: ", model); -->
+<!--   console.log("policy: ", policy); -->
+<!-- } -->
 const wsColor = computed(() => {
   switch (wsStatus.value) {
     case "OPEN":
@@ -122,7 +70,7 @@ const currentValues = computed(() => {
 const chartProps = computed(() => ({
   id: currentId.value, // the id of the corresponding query
   name: "rewards", // the name of the series containing the results
-  values: currentValues.value?.map(({ step, value }) => ({
+  values: currentValues.value?.map(({step, value}) => ({
     x: step as number,
     y: value as number,
   })),
@@ -144,11 +92,11 @@ const violinChartProps = computed(() => {
       ArmFactory(
         i,
         model.value.parameters[i].mean,
-        model.value.parameters[i].stdDev
-      )
+        model.value.parameters[i].stdDev,
+      ),
     );
   }
-  currentValues.value.forEach(({ action, step, value }) => {
+  currentValues.value.forEach(({action, step, value}) => {
     arms[action].pushSample({
       id: step,
       value,

@@ -7,7 +7,7 @@ import {
   validateMsgBack2Front,
   ValidationResult,
 } from "@/scripts/messageValidators";
-import type { Query, QueryForm, QueryResult, Parameter } from "@/data/types";
+import type { Model, Policy, Option, Query, QueryForm, QueryResult, Parameter } from "@/data/types";
 
 function cmpEqual(a: QueryForm) {
   const _cmpEqual = (
@@ -57,7 +57,7 @@ export const useQueryStore = defineStore("queryStore", () => {
   const resultsData = shallowReactive(new Map<Query["id"], QueryResult>());
   const currentId = ref("");
 
-  const { model, policy, options } = storeToRefs(useFormStore());
+  // const { model, policy, options } = storeToRefs(useFormStore());
 
   const wsUrl = ref("ws://localhost:8080");
 
@@ -127,26 +127,22 @@ export const useQueryStore = defineStore("queryStore", () => {
   /**
    * Send the current query to the backend through the WebSocket
    */
-  async function submit() {
-    const queryForm = {
-      model: model.value,
-      policy: policy.value,
-      options: options.value,
-    };
+  async function submit(form: QueryForm) {
+    const {model, policy, options} = form;
 
-    const _cmpEqual = cmpEqual(queryForm);
+    const _cmpEqual = cmpEqual(form);
 
     // Immediately get results from cache if query has already been processed.
     for (const [id, q] of queryData.entries()) {
       if (_cmpEqual(q)) {
-        console.log("Query found in cache:", id);
         currentId.value = id;
+        console.log("Query found in cache:", id);
         return;
       }
     }
 
     // Create new query otherwise
-    const query = makeQuery(queryForm);
+    const query = makeQuery(form);
 
     // If websocket is still connecting, don't try sending request.
     if (wsStatus.value === "CONNECTING") {
@@ -176,11 +172,11 @@ export const useQueryStore = defineStore("queryStore", () => {
   // };
 
   return {
+    submit,
     wsUrl,
     wsClose,
     wsReset,
     wsStatus: readonly(wsStatus),
-    submit,
     queryData: readonly(queryData),
     resultsData: readonly(resultsData),
     currentId: readonly(currentId),
