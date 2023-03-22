@@ -7,30 +7,32 @@ export interface Props {
   items: Parameter[];
 }
 interface Emits {
-   // (e: "select", value: typeof props.items[number])
-   // (e: "submit", values: number[]): void;
-   (e: "change", values: number[]): void;
-   (e: "cancel"): void;
- }
+  // (e: "select", value: typeof props.items[number])
+  // (e: "submit", values: number[]): void;
+  (e: "change", values: number[]): void;
+  (e: "cancel"): void;
+}
 
 const props = withDefaults(defineProps<Props>(), {
-     dataName: 'options'
- });
+  dataName: "options",
+});
 const emit = defineEmits<Emits>();
 
- // local copy of each values into an array
- // TODO: Parse input coming from the textfield as int64 (same as slider input)
- const modelValues = reactive(props.items.map(({value})=>value))
+// local copy of each values into an array
+// TODO: Parse input coming from the textfield as int64 (same as slider input)
+const modelValues = reactive(props.items.map(({ value }) => value));
 
- // Repopulate `modelValues` upon change of props.dataName
- // Note: Cannot watch a property of a reactive object, so use a getter as watched value
- watch(() => props.dataName,
-       () => resetModelValues());
+// Repopulate `modelValues` upon change of props.dataName
+// Note: Cannot watch a property of a reactive object, so use a getter as watched value
+watch(
+  () => props.dataName,
+  () => resetModelValues()
+);
 
 function resetModelValues() {
   modelValues.length = props.items.length;
   modelValues.forEach((_, idx, arr) => (arr[idx] = props.items[idx].value));
- }
+}
 
 function onSave() {
   emit("change", modelValues);
@@ -43,10 +45,7 @@ function onCancel() {
 <template>
   <v-form>
     <v-list lines="two">
-      <v-list-item
-        v-for="(item, idx) in items"
-        :key="idx"
-      >
+      <v-list-item v-for="(item, idx) in items" :key="idx">
         <v-list-item-title>
           <span>{{ item.label }}: </span>
         </v-list-item-title>

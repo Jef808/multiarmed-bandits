@@ -1,20 +1,20 @@
 {
-    "items": [
-        {
-            "name": "nbOfSteps",
-            "label": "Number of Steps",
-            "value": 100,
-            "min": 1,
-            "max": 2000,
-            "step": 10
-        },
-        {
-            "name": "nbOfRepeats",
-            "label": "Number of times to run experiment",
-            "value": 10,
-            "min": 1,
-            "max": 500,
-            "step": 5
-        }
-    ]
+  "items": [
+    {
+      "name": "nbOfSteps",
+      "label": "Number of Steps",
+      "value": 100,
+      "min": 1,
+      "max": 2000,
+      "step": 10
+    },
+    {
+      "name": "nbOfRepeats",
+      "label": "Number of times to run experiment",
+      "value": 10,
+      "min": 1,
+      "max": 500,
+      "step": 5
+    }
+  ]
 }

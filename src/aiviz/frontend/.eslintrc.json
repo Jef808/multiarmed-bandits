@@ -7,27 +7,27 @@
     "prettier-vue": {
       "SFCBlocks": {
         "template": true,
-        "script": true,
+        "script": { "lang": "ts" },
         "style": true,
         "customBlocks": {
           "comments": false
         },
         "usePrettierrc": false,
         "fileInfoOptions": {
-          "ignorePath": ".testignore",
+          "ignorePath": ".prettierignore",
           "withNodeModules": false
         }
       }
     },
     "rules": {
-      "prettier-vue/prettier": {
+      "prettier-vue/prettier": [
         "error": {
           "printWidth": 100,
           "singleQuote": true,
           "semi": false,
           "trailingComma": "esnext"
         }
-      }
+      ]
     }
   }
 }

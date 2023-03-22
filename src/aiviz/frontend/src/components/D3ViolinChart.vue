@@ -133,8 +133,8 @@ const violinPath = computed(() => {
         />
       </p>
       <p>
-          <label>Repeat: </label>
-          <input id="input-repeat" v-model="repeatCount" type="number" />
+        <label>Repeat: </label>
+        <input id="input-repeat" v-model="repeatCount" type="number" />
       </p>
     </div>
   </div>

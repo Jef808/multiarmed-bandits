@@ -6,6 +6,6 @@ function boxMullerTransform() {
   );
 }
 
-export default function(mean: number, stdDev: number) {
+export default function (mean: number, stdDev: number) {
   return mean + stdDev * boxMullerTransform();
 }

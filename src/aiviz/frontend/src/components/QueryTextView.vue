@@ -1,6 +1,6 @@
-<script setup lang='ts'>
-import { computed, withDefaults } from 'vue';
-import type { Query } from '../data/types';
+<script setup lang="ts">
+import { computed, withDefaults } from "vue";
+import type { Query } from "../data/types";
 
 export interface Props {
   query: Query;
@@ -36,39 +36,35 @@ const optionsParameters = computed(() => {
       <v-list-subheader>
         {{ query.id }}
       </v-list-subheader>
-      <v-list-subheader>
-        Model: {{ query.modelName }}
-      </v-list-subheader>
-        <v-card>
-          <v-list-item
-            v-for="param in modelParameters"
-            :title="param.name"
-            :subtitle="param.value"
-            :value="param.value"
-          ></v-list-item>
-        </v-card>
-      <v-list-subheader>
-          Policy: {{ query.policyName }}
-      </v-list-subheader>
-        <v-card>
-          <v-list-item
-            v-for="param in policyParameters"
-            :key="param.name"
-            :title="param.name"
-            :subtitle="param.value"
-            :value="param.value"
-          ></v-list-item>
-        </v-card>
+      <v-list-subheader> Model: {{ query.modelName }} </v-list-subheader>
+      <v-card>
+        <v-list-item
+          v-for="param in modelParameters"
+          :title="param.name"
+          :subtitle="param.value"
+          :value="param.value"
+        ></v-list-item>
+      </v-card>
+      <v-list-subheader> Policy: {{ query.policyName }} </v-list-subheader>
+      <v-card>
+        <v-list-item
+          v-for="param in policyParameters"
+          :key="param.name"
+          :title="param.name"
+          :subtitle="param.value"
+          :value="param.value"
+        ></v-list-item>
+      </v-card>
       <v-list-subheader title="Options"></v-list-subheader>
-        <v-card>
-          <v-list-item
-            v-for="param in optionsParameters"
-            :key="param.name"
-            :title="param.name"
-            :subtitle="param.value"
-            :value="param.value"
-          ></v-list-item>
-        </v-card>
+      <v-card>
+        <v-list-item
+          v-for="param in optionsParameters"
+          :key="param.name"
+          :title="param.name"
+          :subtitle="param.value"
+          :value="param.value"
+        ></v-list-item>
+      </v-card>
     </v-list>
   </v-card>
 </template>
