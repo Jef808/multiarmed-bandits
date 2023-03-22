@@ -63,26 +63,26 @@
                  .range(yRange.value);
      return { X, Y };
  });
- /* */
- function renderAxis() {
+
+function renderAxis() {
      const { X, Y } = scales.value;
      d3.select<SVGGElement, number>("g.axes-x").call(d3.axisBottom(X));
      d3.select<SVGGElement, number>("g.axes-y").call(d3.axisLeft(Y));
  }
- /* */
+
  const path = computed(() => {
      const { X, Y } = scales.value;
      return d3.line()
               .x(d => X(d[0]))
               .y(d => Y(d[1]));
  });
- /* */
+
  const line = computed(() => {
      if (line !== null) {
          return path.value(props.values.map(({x, y}) => ([x, y])));
      }
  });
- /* */
+
  function onDebug() {
      console.log("values", props.values);
      console.log("path.d", line);

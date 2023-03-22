@@ -1,0 +1,33 @@
+{
+  "extends": [
+    "plugin:vue/recommended",
+    "plugin:prettier-vue/recommended"
+  ],
+  "settings": {
+    "prettier-vue": {
+      "SFCBlocks": {
+        "template": true,
+        "script": true,
+        "style": true,
+        "customBlocks": {
+          "comments": false
+        },
+        "usePrettierrc": false,
+        "fileInfoOptions": {
+          "ignorePath": ".testignore",
+          "withNodeModules": false
+        }
+      }
+    },
+    "rules": {
+      "prettier-vue/prettier": {
+        "error": {
+          "printWidth": 100,
+          "singleQuote": true,
+          "semi": false,
+          "trailingComma": "esnext"
+        }
+      }
+    }
+  }
+}
