@@ -12,7 +12,7 @@
     "sourceMap": false,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "lib": ["esnext", "dom"],
+    "lib": ["esnext", "dom", "dom.iterable"],
     "types": ["vuetify", "web-bluetooth"],
     "paths": {
       "@/*": ["src/*"]

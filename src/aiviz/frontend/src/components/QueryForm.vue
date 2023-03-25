@@ -1,27 +1,37 @@
+<script lang="ts">
+export default {
+  name: "QueryForm",
+  components: {ParametersForm},
+};
+</script>
+
 <script setup lang="ts">
-import {reactive, ref, onMounted} from "vue";
+import {reactive, ref, onBeforeMount, type Ref} from "vue";
 import ParametersForm from "./ParametersForm.vue";
 import {useData} from "../data/data";
 import type {DataModel} from "../data/types";
+
 // TODO Extract a single column into a formSection component
 // and make the call to useDataModel() here, passing each column
 // item to the formSection components as props.
 
-const sections = useData();
+let sections = [] as {title: string; items: DataModel[]}[];
 
 const loading = ref(false);
-const selectable = reactive([]);
-const selected = reactive([]);
+const selectable = reactive([] as boolean[]);
+const selected = [] as Ref<DataModel>[];
 
-onMounted(() => {
+onBeforeMount(() => {
+  sections = useData();
   sections.forEach((section) => {
     selected.push(ref(section.items[0]));
-    selectable.push(section.items.length > 1 ? true : false);
+    const _selectable = section.items?.length > 1 || false;
+    selectable.push(_selectable);
   });
 });
 
 // Mock form submission
-function handleSubmit() {
+function onSubmit() {
   loading.value = true;
   setTimeout(() => {
     loading.value = false;
@@ -30,7 +40,7 @@ function handleSubmit() {
 </script>
 
 <template>
-  <v-form @submit.prevent="handleSubmit">
+  <v-form @submit.prevent="onSubmit">
     <v-row>
       <v-col
         cols="4"
@@ -40,17 +50,18 @@ function handleSubmit() {
       >
         <v-card :title="section.title.toUpperCase()">
           <v-card-text>
-            <v-row v-if="selectable[idx]">
+            <v-row>
               <v-spacer></v-spacer>
 
               <v-col cols="8">
                 <!-- Put select element here -->
                 <v-select
-                  v-model="selected[idx]"
-                  :items="formSection.items"
+                  v-model="selected[idx].value"
+                  :items="section.items"
                   item-title="label"
                   item-value="name"
                   returnObject
+                  :disabled="!selectable[idx]"
                 >
                 </v-select>
               </v-col>
@@ -62,11 +73,13 @@ function handleSubmit() {
               <v-col cols="8">
                 <!-- Put selected parameters input here -->
                 <ParametersForm
-                  :name="selected.name"
-                  :label="selected.label"
-                  v-model="selected.parameters"
+                  :name="selected[idx].value.name"
+                  :label="selected[idx].value.label"
+                  v-model="selected[idx].value.parameters"
                 >
                 </ParametersForm>
+
+                <v-spacer></v-spacer>
               </v-col>
               <v-spacer />
             </v-row>

@@ -13,11 +13,9 @@ const tab = ref("query");
 function onResetWs() {
   wsReset();
 }
-
 function onCloseWs() {
   wsClose("Explicit Stop");
 }
-
 const wsColor = computed(() => {
   switch (wsStatus.value) {
     case "OPEN":
