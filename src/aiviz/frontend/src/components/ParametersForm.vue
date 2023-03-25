@@ -15,6 +15,7 @@ export interface Props {
 }
 interface Emits {
   (e: "update:modelValue", values: Parameter[]): void;
+  (e: "change"): void;
 }
 
 const props = defineProps<Props>();

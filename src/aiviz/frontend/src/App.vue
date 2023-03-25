@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import {computed, ref} from "vue";
+import {computed, nextTick, ref} from "vue";
+import {onKeyStroke} from "@vueuse/core";
 import {storeToRefs} from "pinia";
 import {useQueryStore} from "./store/query.store";
+import type {QueryForm as Form} from "./data/types";
 import QueryForm from "./components/QueryForm.vue";
 import D3LineChart from "./components/D3LineChart.vue";
 
 const {wsStatus, wsUrl, currentId, resultsData} = storeToRefs(useQueryStore());
 const {wsReset, wsClose, submit} = useQueryStore();
 
-const tab = ref("query");
+const tab = ref("query"); // 'viewer', 'query', 'debug'
 
 function onResetWs() {
   wsReset();
@@ -16,6 +18,28 @@ function onResetWs() {
 function onCloseWs() {
   wsClose("Explicit Stop");
 }
+function onSubmit(e, q: Form) {
+  submit(q);
+}
+function onNewQuery() {
+  tab.value = "viewer";
+  console.log("onNewQuery: tab=", tab);
+}
+onKeyStroke(["v", "V", "1"], (e) => {
+  e.preventDefault();
+  tab.value = "viewer";
+  console.log("keystroke", e);
+});
+onKeyStroke(["q", "Q", "2"], (e) => {
+  e.preventDefault();
+  tab.value = "query";
+  console.log("keystroke", e);
+});
+onKeyStroke(["d", "D", "3"], (e) => {
+  e.preventDefault();
+  tab.value = "debug";
+  console.log("keystroke", e);
+});
 const wsColor = computed(() => {
   switch (wsStatus.value) {
     case "OPEN":
@@ -48,10 +72,11 @@ const chartProps = computed(() => {
   const ret = {
     id: currentId.value, // the id of the corresponding query
     name: "rewards", // the name of the series containing the results
-    values: currentValues.value?.map(({step, value}) => ({
-      x: step as number,
-      y: value as number,
-    })),
+    values:
+      currentValues.value?.map(({step, value}) => ({
+        x: step as number,
+        y: value as number,
+      })) || [],
     width: 1000,
     height: 500,
     xPadding: 30,
@@ -64,7 +89,7 @@ const chartProps = computed(() => {
 
 <template>
   <v-app>
-    <v-app-bar>
+    <v-app-bar color="primary">
       <v-app-bar-nav-icon></v-app-bar-nav-icon>
       <v-app-bar-title>MLView</v-app-bar-title>
 
@@ -75,12 +100,12 @@ const chartProps = computed(() => {
       </v-btn>
 
       <template v-slot:extension>
-        <v-tabs v-model="tab" align-tabs="title" grow>
-          <v-tab value="viewer">Viewer</v-tab>
+        <v-tabs v-model="tab" align-tabs="title" grow color="secondary">
+          <v-tab value="viewer"><u>V</u>iewer</v-tab>
 
-          <v-tab value="query">New Query</v-tab>
+          <v-tab value="query"><u>Q</u>uery</v-tab>
 
-          <v-tab value="debug">Debug</v-tab>
+          <v-tab value="debug"><u>D</u>ebug</v-tab>
         </v-tabs>
       </template>
     </v-app-bar>
@@ -89,7 +114,10 @@ const chartProps = computed(() => {
       <v-window v-model="tab">
         <v-window-item value="query">
           <template #default>
-            <QueryForm :handleSubmit="submit"></QueryForm>
+            <QueryForm
+              :handleSubmit="submit"
+              @newQuery="onNewQuery"
+            ></QueryForm>
           </template>
         </v-window-item>
 

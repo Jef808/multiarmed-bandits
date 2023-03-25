@@ -100,7 +100,7 @@ function onDebug() {
 </script>
 
 <template>
-  <div>
+  <v-container flex>
     <svg class="chart" :width="width" :height="height" :viewBox="viewBox">
       <g :transform="chartTransformAttr" class="chart">
         <g class="axes-x" :transform="xAxisTransformAttr"></g>
@@ -108,7 +108,7 @@ function onDebug() {
         <path class="chart-line" :d="line" />
       </g>
     </svg>
-  </div>
+  </v-container>
 </template>
 
 <style>
