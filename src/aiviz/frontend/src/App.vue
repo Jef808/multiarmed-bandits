@@ -25,17 +25,17 @@ function onNewQuery() {
   tab.value = "viewer";
   console.log("onNewQuery: tab=", tab);
 }
-onKeyStroke(["v", "V", "1"], (e) => {
+onKeyStroke(["v", "V"], (e) => {
   e.preventDefault();
   tab.value = "viewer";
   console.log("keystroke", e);
 });
-onKeyStroke(["q", "Q", "2"], (e) => {
+onKeyStroke(["q", "Q"], (e) => {
   e.preventDefault();
   tab.value = "query";
   console.log("keystroke", e);
 });
-onKeyStroke(["d", "D", "3"], (e) => {
+onKeyStroke(["d", "D"], (e) => {
   e.preventDefault();
   tab.value = "debug";
   console.log("keystroke", e);
