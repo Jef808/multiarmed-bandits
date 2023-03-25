@@ -7,21 +7,15 @@ export type Parameter = {
   step: number;
 };
 
-export enum Category {
-  models = "models",
-  policies = "policies",
-  options = "options",
-}
-export type CategoryName = "models" | "policies" | "options";
+// export enum Category {
+//   models = "model",
+//   policies = "policy",
+//   options = "options",
+// }
+export type Category = "model" | "policy" | "options";
 
 export type ModelName = "mab";
 export type PolicyName = "epsilonGreedy" | "ucb";
-
-export type Models = ["mab"];
-export type Policies = ["epsilonGreedy", "ucb"];
-
-// export type ModelName = Models.mab;
-// export type PolicyName = Policies.epsilonGreedy | Policies.ucb
 
 export type DataModel = {
   name: string;

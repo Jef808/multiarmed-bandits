@@ -1,13 +1,12 @@
 import uniqueId from "lodash.uniqueid";
-import { reactive, readonly, ref, shallowReactive } from "vue";
+import { readonly, ref, shallowReactive } from "vue";
 import { useWebSocket } from "@vueuse/core";
 import { defineStore, storeToRefs } from "pinia";
-import { useFormStore } from "@/store/form.store";
 import {
   validateMsgBack2Front,
   ValidationResult,
 } from "@/scripts/messageValidators";
-import type { Model, Policy, Option, Query, QueryForm, QueryResult, Parameter } from "@/data/types";
+import type { Query, QueryForm, QueryResult, Parameter } from "@/data/types";
 
 function cmpEqual(a: QueryForm) {
   const _cmpEqual = (
@@ -127,14 +126,14 @@ export const useQueryStore = defineStore("queryStore", () => {
   /**
    * Send the current query to the backend through the WebSocket
    */
-  async function submit(form: QueryForm) {
+  function submit(form: QueryForm) {
     const {model, policy, options} = form;
 
     const _cmpEqual = cmpEqual(form);
 
     // Immediately get results from cache if query has already been processed.
-    for (const [id, q] of queryData.entries()) {
-      if (_cmpEqual(q)) {
+    for (const [id, query] of queryData.entries()) {
+      if (_cmpEqual(query)) {
         currentId.value = id;
         console.log("Query found in cache:", id);
         return;
@@ -152,6 +151,7 @@ export const useQueryStore = defineStore("queryStore", () => {
       );
       return;
     }
+
     // If websocket status is anything but 'OPEN', emit a warning.
     if (wsStatus.value !== "OPEN") {
       console.warn(

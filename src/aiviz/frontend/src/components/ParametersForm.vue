@@ -1,71 +1,78 @@
 <script setup lang="ts">
-import {reactive, watch} from "vue";
+import {reactive, ref, watch, onMounted} from "vue";
 import type {Parameter} from "../data/types";
 
 export interface Props {
-  dataName?: string;
-  items: Parameter[];
+  name: string;
+  label: string;
+  modelValue: Parameter[];
 }
 interface Emits {
-  // (e: "select", value: typeof props.items[number])
-  // (e: "submit", values: number[]): void;
-  (e: "change", values: number[]): void;
-  (e: "cancel"): void;
+  (e: "update:modelValue", values: Parameter[]): void;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  dataName: "options",
-});
+const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// local copy of each values into an array
+// local copy of parameter values.
 // TODO: Parse input coming from the textfield as int64 (same as slider input)
-const modelValues = reactive(props.items.map(({value}) => value));
+// const modelValues = reactive(props.items.map(({value}) => value));
+const modelValues = reactive([]);
 
-// Repopulate `modelValues` upon change of props.dataName
+onMounted(() => {
+  resetModelValues();
+});
+
+// Repopulate `modelValues` upon change of props.name
 // Note: Cannot watch a property of a reactive object, so use a getter as watched value
+// Question: Should we use watchEffect with a callback that lets us avoid the onMounted callback?
 watch(
-  () => props.dataName,
+  () => props.name,
   () => resetModelValues(),
 );
 
 function resetModelValues() {
-  modelValues.length = props.items.length;
-  modelValues.forEach((_, idx, arr) => (arr[idx] = props.items[idx].value));
+  modelValues.length = props.modelValue.length;
+  modelValues.forEach((_, idx, arr) => {
+    arr[idx] = ref(props.modelValue[idx].value);
+  });
 }
 
 function onSave() {
-  emit("change", modelValues);
+  emit(
+    "update:modelValue",
+    props.modelValue.map((param, i) => ({value: modelValues[i], ...param})),
+  );
 }
 function onCancel() {
-  emit("cancel");
+  resetModelValues();
 }
 </script>
 
 <template>
   <v-form>
     <v-list lines="two">
-      <v-list-item v-for="(item, idx) in items" :key="idx">
+      <v-list-item v-for="(param, idx) in modelValue" :key="idx">
         <v-list-item-title>
-          <span>{{ item.label }}: </span>
+          <span>{{ param.label }}: </span>
         </v-list-item-title>
         <v-list-item-subtitle>
           <v-slider
             v-model="modelValues[idx]"
+            :min="param.min"
+            :max="param.max"
+            :step="param.step"
             density="compact"
             hide-details
-            :min="item.min"
-            :max="item.max"
-            :step="item.step"
           >
             <template #append>
               <v-text-field
                 v-model="modelValues[idx]"
-                hide-details
-                single-line
                 density="compact"
                 type="number"
                 style="width: 80px"
+                hide-details
+                single-line
               >
               </v-text-field>
             </template>

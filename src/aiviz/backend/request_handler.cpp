@@ -1,8 +1,7 @@
 #include "aiviz/backend/request_handler.h"
-//#include "serverbackend/boost_serializer_helper.h"
 #include "aiviz/environments/multiarmed_bandits/multiarmed_bandits.h"
-#include "aiviz/policies/policies.h"
 #include "aiviz/policies/agent.h"
+#include "aiviz/policies/policies.h"
 
 #include <boost/json.hpp>
 #include <boost/json/src.hpp>
@@ -18,80 +17,66 @@ namespace json = boost::json;
 
 namespace policy {
 
-void tag_invoke( json::value_from_tag, json::value& jv, Sample const& s) {
-  jv = {
-    { "action" , s.action.id },
-    { "step" , s.step },
-    { "value" , s.value }
-  };
+void tag_invoke(json::value_from_tag, json::value& jv, Sample const& s) {
+    jv = {
+        {"action", s.action.id},
+        {  "step",      s.step},
+        { "value",     s.value}
+    };
 }
 
-}  // namespace policy
+} // namespace policy
 
 namespace {
 
-inline std::string make_response(
-    std::string_view id,
-    std::string_view name,
-    const std::vector<::policy::Sample>& values)
-{
-  auto response =
-      json::object({
-          {"id", id},
-          {"data", json::array{}}});
-  response["data"] = {
-      json::object({
-                  {"name", name},
-                  {"values", json::value_from( values )}
-                })
+inline std::string make_response(std::string_view id, std::string_view name,
+                                 const std::vector<::policy::Sample>& values) {
+    auto response = json::object({
+        {  "id",            id},
+        {"data", json::array{}}
+    });
+    response["data"] = {
+        json::object({{"name", name}, {"values", json::value_from(values)}}
+        )
     };
-  return json::serialize(response);
+    return json::serialize(response);
 }
 
 } // namespace
 
 namespace Query {
 
-json::value
-parse_string( std::string_view sv )
-{
+json::value parse_string(std::string_view sv) {
     json::stream_parser p;
     json::error_code ec;
-    do
-    {
+    do {
         char buf[4096];
-        const auto nread = std::max( sizeof(buf) / sizeof(char), sv.size() );
+        const auto nread = std::max(sizeof(buf) / sizeof(char), sv.size());
         std::copy_n(sv.substr(0, nread).data(), nread, buf);
         sv.remove_prefix(nread);
-        p.write( buf, nread, ec );
-    }
-    while( ! sv.empty() );
-    if( ec )
+        p.write(buf, nread, ec);
+    } while (!sv.empty());
+    if (ec) {
         return nullptr;
-    p.finish( ec );
-    if( ec )
+    }
+    p.finish(ec);
+    if (ec)
         return nullptr;
     return p.release();
 }
 
-void
-pretty( std::ostream& out, json::value const& jv, std::string indent = "")
-{
-    switch(jv.kind())
-    {
-    case json::kind::object:
-    {
+void pretty(std::ostream& out, json::value const& jv, std::string indent = "") {
+    switch (jv.kind()) {
+    case json::kind::object: {
         out << "{\n";
         indent.append(4, ' ');
         auto const& obj = jv.get_object();
-        if(! obj.empty())
-        {
+        if (!obj.empty()) {
             auto it = obj.begin();
-            for(;;)
-            {
+            for (;;) {
                 out << indent << json::serialize(it->key()) << " : ";
                 pretty(out, it->value(), indent);
-                if(++it == obj.end())
+                if (++it == obj.end())
                     break;
                 out << ",\n";
             }
@@ -101,20 +86,16 @@ pretty( std::ostream& out, json::value const& jv, std::string indent = "")
         out << indent << "}";
         break;
     }
-
-    case json::kind::array:
-    {
+    case json::kind::array: {
         out << "[\n";
         indent.append(4, ' ');
         auto const& arr = jv.get_array();
-        if(! arr.empty())
-        {
+        if (!arr.empty()) {
             auto it = arr.begin();
-            for(;;)
-            {
+            for (;;) {
                 out << indent;
-                pretty( out, *it, indent);
-                if(++it == arr.end())
+                pretty(out, *it, indent);
+                if (++it == arr.end())
                     break;
                 out << ",\n";
             }
@@ -124,45 +105,33 @@ pretty( std::ostream& out, json::value const& jv, std::string indent = "")
         out << indent << "]";
         break;
     }
-
-    case json::kind::string:
-    {
+    case json::kind::string: {
         out << json::serialize(jv.get_string());
         break;
     }
-
-    case json::kind::uint64:
-        out << jv.get_uint64();
-        break;
-
-    case json::kind::int64:
-        out << jv.get_int64();
-        break;
-
-    case json::kind::double_:
-        out << jv.get_double();
-        break;
-
-    case json::kind::bool_:
-        if(jv.get_bool())
-            out << "true";
-        else
-            out << "false";
-        break;
-
-    case json::kind::null:
-        out << "null";
-        break;
+    case json::kind::uint64:  out << jv.get_uint64();  break;
+    case json::kind::int64:   out << jv.get_int64();   break;
+    case json::kind::double_: out << jv.get_double();  break;
+    case json::kind::null:    out << "null";           break;
+    case json::kind::bool_:   out << std::boolalpha
+                                  << jv.get_bool()
+                                  << std::noboolalpha; break;
+        // if (jv.get_bool())
+        //     out << "true";
+        // else
+        //     out << "false";
+        // break;
     }
-
-    if(indent.empty())
+    if (indent.empty()) {
         out << "\n";
+    }
 }
 
 auto GetModelVariant(json::value modelName, json::value modelParameters) {
     using Variant = std::variant<env::MultiArmedBandit>;
     if (modelName.get_string() == "mab") {
-        auto nb_of_arms = static_cast<size_t>(modelParameters.get_object()["nbOfArms"].get_int64());
+        auto nb_of_arms = static_cast<size_t>(
+            modelParameters.get_object()["nbOfArms"].get_int64());
         return Variant{env::MultiArmedBandit{nb_of_arms}};
     }
 
@@ -174,9 +143,9 @@ auto GetPolicyVariant(json::value policyName, json::value policyParameters) {
     if (policyName.get_string() == "epsilonGreedy") {
         auto epsilon = policyParameters.get_object()["epsilon"].get_double();
         return Variant{policy::EpsilonGreedy{epsilon}};
-    }
-    else if (policyName.get_string() == "ucb") {
-        auto exploration = policyParameters.get_object()["exploration"].get_double();
+    } else if (policyName.get_string() == "ucb") {
+        auto exploration =
+            policyParameters.get_object()["exploration"].get_double();
         return Variant{policy::Ucb{exploration}};
     }
 
@@ -187,11 +156,11 @@ auto GetNbSteps(json::value options) {
     return static_cast<size_t>(options.get_object()["nbOfSteps"].get_int64());
 }
 
-template<typename OutputIter>
-struct Visitor {
+template <typename OutputIter> struct Visitor {
 
     Visitor(size_t nb_samples, OutputIter out)
-    : nb_samples{nb_samples}, out{out} {}
+        : nb_samples{nb_samples}
+        , out{out} { }
 
     void operator()(auto& m, auto& p) {
         policy::Agent{m, p}.run(nb_samples, out);
@@ -201,15 +170,14 @@ struct Visitor {
     OutputIter out;
 };
 
-std::pair<bool, std::string> RequestHandler::operator()(const std::string& request) {
-  static constexpr size_t indent_size = 2;
+std::pair<bool, std::string> RequestHandler::operator()(std::string&& request) {
+    static constexpr size_t indent_size = 2;
 
     if (request == "ping") {
-      return { true, "pong" };
+        return {true, "pong"};
     }
 
-    try
-    {
+    try {
         auto req = json::parse(request).as_object();
         std::ostringstream oss;
 
@@ -219,44 +187,31 @@ std::pair<bool, std::string> RequestHandler::operator()(const std::string& reque
         std::cout << std::endl;
 
         const auto id = req["id"].get_string();
-        const auto model = GetModelVariant(req["modelName"], req["modelParameters"]);
-        const auto policy = GetPolicyVariant(req["policyName"], req["policyParameters"]);
+        const auto model =
+            GetModelVariant(req["modelName"], req["modelParameters"]);
+        const auto policy =
+            GetPolicyVariant(req["policyName"], req["policyParameters"]);
         const auto nb_steps = GetNbSteps(req["options"]);
         std::vector<::policy::Sample> buffer;
 
         auto out = std::back_inserter(buffer);
 
-        try
-        {
-          std::visit(Visitor{nb_steps, out}, model, policy);
-          for (const auto& sample : buffer) {
-            std::cout << "action: " << sample.action.id << ",\nstep: " << sample.step << ",\nvalue: " << sample.value << std::endl;
-          }
-          return { true, make_response(id, "rewards", buffer) };
+        try {
+            std::visit(Visitor{nb_steps, out}, model, policy);
+            for (const auto& sample : buffer) {
+                std::cout << "action: "   << sample.action.id
+                          << ",\nstep: "  << sample.step
+                          << ",\nvalue: " << sample.value << std::endl;
+            }
+            return {true, make_response(id, "rewards", buffer)};
+        } catch (std::exception const& e) {
+            std::cerr << "Error while running policy: " << e.what()
+                      << std::endl;
+            return {false, ""};
         }
-        catch (std::exception const& e)
-        {
-          std::cerr << "Error while running policy: "
-                    << e.what() << std::endl;
-          return { false, "" };
-        }
-        try
-        {
-          //std::string result = json::serialize(json::value_from(buffer));
-          //return std::make_pair( true, std::move(result) );
-        }
-        catch (std::exception const& e)
-        {
-          std::cerr << "Error while serializing results: "
-              << e.what() << std::endl;
-          return { false, "" };
-        }
-    }
-    catch(std::exception const& e)
-    {
-        std::cerr << "Error while parsing request: "
-                  << e.what() << std::endl;
-        return { false, "" };
+    } catch (std::exception const& e) {
+      std::cerr << "Error while parsing request: " << e.what() << std::endl;
+      return {false, ""};
     }
 }
 

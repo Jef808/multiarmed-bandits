@@ -1,31 +1,14 @@
 <script setup lang="ts">
 import {computed, ref} from "vue";
 import {storeToRefs} from "pinia";
-import QueryForm from "./components/QueryForm.vue";
 import {useQueryStore} from "./store/query.store";
-import QueryTextView from "./components/QueryTextView.vue";
+import QueryForm from "./components/QueryForm.vue";
 import D3LineChart from "./components/D3LineChart.vue";
-import D3ViolinChart from "./components/D3ViolinChart.vue";
-import ArmFactory, {type Arm, type Sample} from "./scripts/arm";
 
-const queryStore = useQueryStore();
-
+const {wsStatus, wsUrl, currentId} = storeToRefs(useQueryStore());
 const {wsReset, wsClose} = useQueryStore();
-const {currentId, wsStatus, queryData, resultsData, wsUrl} = storeToRefs(
-  useQueryStore(),
-);
 
-const debug = ref(true);
-const showWsInfo = ref(true);
-const panel = ref("");
-
-const haveResult = computed(() => {
-  const ret = currentId.value !== undefined && currentId.value !== "";
-  if (ret) {
-    console.log("Have result: ", currentId.value);
-  }
-  return ret;
-});
+const tab = ref("query");
 
 function onResetWs() {
   wsReset();
@@ -35,10 +18,6 @@ function onCloseWs() {
   wsClose("Explicit Stop");
 }
 
-<!-- function onDebug() { -->
-<!--   console.log("model: ", model); -->
-<!--   console.log("policy: ", policy); -->
-<!-- } -->
 const wsColor = computed(() => {
   switch (wsStatus.value) {
     case "OPEN":
@@ -55,179 +34,91 @@ const wsColor = computed(() => {
 const chartType = ref("lineChart" as "lineChart" | "violinChart");
 
 // Compute the value of the first series of the last result.
-const currentValues = computed(() => {
-  const resultId = currentId.value;
-  console.log("Result Id: ", resultId);
+// const currentValues = computed(() => {
+//   const resultId = currentId.value;
+//   console.log("Result Id: ", resultId);
+//
+//   const results = resultsData.value.get(resultId);
+//   console.log("Result: ", results);
+//
+//   if (results !== undefined) {
+//     return results[0].values; // Pick the first series' values
+//   }
+// });
 
-  const results = resultsData.value.get(resultId);
-  console.log("Result: ", results);
-
-  if (results !== undefined) {
-    return results[0].values; // Pick the first series' values
-  }
-});
-
-const chartProps = computed(() => ({
-  id: currentId.value, // the id of the corresponding query
-  name: "rewards", // the name of the series containing the results
-  values: currentValues.value?.map(({step, value}) => ({
-    x: step as number,
-    y: value as number,
-  })),
-  width: 1000,
-  height: 500,
-  xPadding: 30,
-  yPadding: 30,
-}));
-
-const violinChartProps = computed(() => {
-  if (model.value.name !== "mab") {
-    console.error("violin chart unimplemented for model", model.value.name);
-    throw "Unimplemented method";
-  }
-  const nbOfArms = model.value.parameters["numberOfArms"];
-  const arms = [] as Arm[];
-  for (let i = 0; i < nbOfArms; ++i) {
-    arms.push(
-      ArmFactory(
-        i,
-        model.value.parameters[i].mean,
-        model.value.parameters[i].stdDev,
-      ),
-    );
-  }
-  currentValues.value.forEach(({action, step, value}) => {
-    arms[action].pushSample({
-      id: step,
-      value,
-    });
-  });
-  return {
-    data: arms,
-  };
-});
+// const chartProps = computed(() => ({
+//   id: currentId.value, // the id of the corresponding query
+//   name: "rewards", // the name of the series containing the results
+//   values: currentValues.value?.map(({step, value}) => ({
+//     x: step as number,
+//     y: value as number,
+//   })),
+//   width: 1000,
+//   height: 500,
+//   xPadding: 30,
+//   yPadding: 30,
+// }));
 </script>
 
 <template>
   <v-app>
+    <v-app-bar>
+      <v-app-bar-nav-icon></v-app-bar-nav-icon>
+      <v-app-bar-title>MLView</v-app-bar-title>
+
+      <v-spacer></v-spacer>
+
+      <v-btn icon>
+        <v-icon>mdi-magnify</v-icon>
+      </v-btn>
+
+      <template v-slot:extension>
+        <v-tabs v-model="tab" align-tabs="title" grow>
+          <v-tab value="viewer">Viewer</v-tab>
+
+          <v-tab value="query">New Query</v-tab>
+
+          <v-tab value="debug">Debug</v-tab>
+        </v-tabs>
+      </template>
+    </v-app-bar>
+
     <v-main>
-      <div>
-        <v-btn @click="onDebug">Debug</v-btn>
-        <br />
-        <v-btn @click="chartType = 'lineChart'">Line Chart</v-btn>
-        <v-btn @click="chartType = 'violinChart'">Violin Chart</v-btn>
-      </div>
-      <v-row>
-        <v-col cols="8">
-          <v-row>
-            <v-col cols="auto">
-              <v-container
-                style="border: 1px solid; border-down: none"
-                v-if="haveResult"
-              >
-                <D3LineChart
-                  v-bind="chartProps"
-                  v-if="chartType === 'lineChart'"
-                ></D3LineChart>
-                <D3ViolinChart
-                  v-bind="violinChartProps"
-                  v-else-if="chartType === 'violinChart'"
-                ></D3ViolinChart>
-              </v-container>
-              <v-container v-else>No results to display...</v-container>
-            </v-col>
-          </v-row>
-          <v-container style="border: 1px solid">
-            <v-checkbox
-              id="toggle-debug"
-              v-model="debug"
-              label="Debug Info"
-            ></v-checkbox>
-            <v-divider></v-divider>
-            <v-row v-if="debug && haveResult">
-              <v-col cols="6">
-                <h2>Query History</h2>
-                {{ queryData.size }} queries
-                <v-list v-if="queryData.size > 0">
-                  <v-list-item
-                    v-for="(query, idx) in queryData.values()"
-                    :key="idx"
-                  >
-                    <pre>{{ query }}</pre>
-                  </v-list-item>
-                </v-list>
-              </v-col>
-              <v-col cols="6">
-                <v-row>
-                  <v-col cols="auto">
-                    <h2>Result History</h2>
-                    {{ resultsData.size }} results
-                  </v-col>
-                </v-row>
-                <v-row>
-                  <v-col cols="auto">
-                    <h2>Current Result</h2>
-                    {{ currentId }}
-                    <v-list>
-                      <v-list-item
-                        v-for="(value, idx) in currentValues"
-                        :key="idx"
-                      >
-                        <pre>{{ value }}</pre>
-                      </v-list-item>
-                    </v-list>
-                  </v-col>
-                </v-row>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-col>
-        <v-col cols="4">
-          <v-container id="div-query-form">
+      <v-window v-model="tab">
+        <v-window-item value="query">
+          <template #default>
             <QueryForm />
-          </v-container>
-        </v-col>
-        <v-container id="websocket-tile">
-          <v-expansion-panels>
-            <v-expansion-panel>
-              <v-expansion-panel-title :color="wsColor">
-                <v-row>
-                  <v-col cols="6" class="d-flex align-center">
-                    <v-list-item-title>WebSocket Info</v-list-item-title>
-                  </v-col>
-                  <v-col cols="6" class="d-flex justify-center">
-                    <v-list-item
-                      title="Status"
-                      :subtitle="wsStatus"
-                    ></v-list-item>
-                  </v-col>
-                </v-row>
-              </v-expansion-panel-title>
-              <v-expansion-panel-text>
-                <v-form>
-                  <v-row>
-                    <v-col cols="12" class="d-flex justify-end space-between">
-                      <v-row>
-                        <v-col cols="8">
-                          <v-label for="wsUrl-input">Websocket address</v-label>
-                          <v-text-field v-model="wsUrl" disabled></v-text-field>
-                        </v-col>
-                        <v-spacer></v-spacer>
-                        <v-col cols="auto">
-                          <v-btn type="button" @click="onResetWs">Reset</v-btn>
-                        </v-col>
-                        <v-col cols="auto">
-                          <v-btn type="button" @click="onCloseWs">Stop</v-btn>
-                        </v-col>
-                      </v-row>
-                    </v-col>
-                  </v-row>
-                </v-form>
-              </v-expansion-panel-text>
-            </v-expansion-panel>
-          </v-expansion-panels>
-        </v-container>
-      </v-row>
+          </template>
+        </v-window-item>
+
+        <v-window-item value="viewer">
+          <template #default>
+            <v-card flat>
+              <v-card-text>Place viewer here...</v-card-text>
+            </v-card>
+          </template>
+        </v-window-item>
+
+        <v-window-item value="debug">
+          <template #default>
+            <v-card flat>
+              <v-card-text>Place debug info here...</v-card-text>
+            </v-card>
+          </template>
+        </v-window-item>
+      </v-window>
     </v-main>
+
+    <v-spacer></v-spacer>
+
+    <v-col cols="auto">
+      <v-footer :color="wsColor">
+        Websocket status: <b>{{ wsStatus }}</b>
+
+        <v-spacer></v-spacer>
+
+        Address: <b>{{ wsUrl }}</b>
+      </v-footer>
+    </v-col>
   </v-app>
 </template>
