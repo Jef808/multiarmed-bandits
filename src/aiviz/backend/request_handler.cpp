@@ -152,8 +152,11 @@ auto GetPolicyVariant(json::value policyName, json::value policyParameters) {
     throw std::runtime_error("Unknown policy name");
 }
 
-auto GetNbSteps(json::value options) {
-    return static_cast<size_t>(options.get_object()["nbOfSteps"].get_int64());
+auto GetNbSteps(json::value options_parameters) {
+    return static_cast<size_t>(options_parameters.get_object()["nbOfSteps"].get_int64());
+}
+auto GetNbRepeats(json::value options_parameters) {
+  return static_cast<size_t>(options_parameters.get_object()["nbOfRepeats"].get_int64());
 }
 
 template <typename OutputIter> struct Visitor {
@@ -191,9 +194,10 @@ std::pair<bool, std::string> RequestHandler::operator()(std::string&& request) {
             GetModelVariant(req["modelName"], req["modelParameters"]);
         const auto policy =
             GetPolicyVariant(req["policyName"], req["policyParameters"]);
-        const auto nb_steps = GetNbSteps(req["options"]);
-        std::vector<::policy::Sample> buffer;
+        const auto nb_steps = GetNbSteps(req["optionsParameters"]);
+        const auto nb_repeats = GetNbRepeats(req["optionsParameters"]);
 
+        std::vector<::policy::Sample> buffer;
         auto out = std::back_inserter(buffer);
 
         try {

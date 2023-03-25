@@ -3,9 +3,10 @@
 
 #include "aiviz/backend/request_handler.h"
 #include "aiviz/environments/multiarmed_bandits/multiarmed_bandits.h"
-#include "aiviz/policies/agent.h"
 #include "aiviz/policies/policies.h"
+#include "aiviz/policies/agent.h"
 
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <deque>
@@ -23,7 +24,8 @@ namespace websocket = beast::websocket;
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
 
-template <typename ErrorCode> void fail(ErrorCode ec, char const* what) {
+template<typename ErrorCode>
+void fail(ErrorCode ec, char const* what) {
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
@@ -40,6 +42,7 @@ void set_config(websocket::stream<tcp::socket>& ws) {
             if (!ws.reason().reason.empty())
                 std::cout << " : " << ws.reason().reason;
             std::cout << std::endl;
+
         });
 
     // Set suggested timeout settings for the websocket
@@ -54,89 +57,96 @@ void set_config(websocket::stream<tcp::socket>& ws) {
         }));
 }
 
-struct RequestHandlerErrorCode : public std::error_code {
-    [[nodiscard]] const char* message() const noexcept { return "...Error..."; }
+
+struct Queue {
+
+    // Push at back, return const ref to first one item
+    const std::string& push(std::string&& s) {
+        data.push_back(std::move(s));
+        return data.back();
+    }
+    // Overload emplacing back the string from a const pointer
+    // to contiguous chars
+    const std::string& push(const char* ps, std::size_t sz) {
+        return data.emplace_back(ps, sz);
+    }
+
+    // Get the first item in the queue (removing it from queue)
+    std::string pop() {
+      std::string ret = data.front();
+      data.pop_front();
+      return ret;
+    }
+
+    std::mutex m;
+    std::deque<std::string> data;
 };
 
-void run_sync(tcp::socket socket) {
+struct RequestHandlerErrorCode : std::error_code {
+  const char* message() const noexcept { return "...Error..."; }
+};
+
+
+void run(tcp::socket socket) {
+
     using beast::error_code;
     using beast::tcp_stream;
     using websocket::stream;
 
-    // Container to save work requests that accumulates
-    // Queue queue;
-
+    // Container to save any work that accumulates
+    Queue queue;
     error_code ec;
 
     Query::RequestHandler request_handler;
 
-    websocket::stream<tcp::socket> ws{std::move(socket)};
-
     try {
+        websocket::stream<tcp::socket> ws{std::move(socket)};
+
         // Setup the websocket config
         set_config(ws);
 
         // Accept the websocket handshake
         ws.accept(ec);
-        if (ec) {
+        if (ec)
             return fail(ec, "accept");
-        }
 
-        // std::size_t bytes_read = 0;
+        std::size_t bytes_read = 0;
 
         // The buffer where we temporarily store the incoming requests.
         beast::flat_buffer buffer;
-
-        // Buffer for outcoming responses.
         beast::flat_buffer buffer_rep;
-        std::string        rep;
 
         bool okay = true;
+        std::string rep;
 
         for (;;) {
-            // Read request
-            ws.read(buffer, ec);
 
-            if (ec == websocket::error::closed) {
+            // Read request
+            std::size_t bytes_transmitted = ws.read(buffer, ec);
+            if (ec == websocket::error::closed)
                 return;
-            }
-            if (ec) {
+            if (ec)
                 return fail(ec, "read");
-            }
 
             // Set websocket to text mode (if text was read)
             ws.text(ws.got_text());
 
-            // We expect messages to be delivered in one frame.
-            assert(ws.is_message_done());  // NOLINT
+            // In this implementation, we expect messages to be delivered
+            // in one frame.
+            assert(ws.is_message_done());
 
-            // queue.push(
-            //     static_cast<const char*>(buffer.data().data()), buffer.size());
-            // std::tie(okay, rep) = request_handler(queue.pop());
-
-            // Appends all the writeable bytes on top of the readable bytes
-            // buffer.commit(buffer.max_size());
-            // req = std::string(static_cast<const char*>(buffer.data().data()), buffer.size());
-
-            std::tie(okay, rep) = request_handler(beast::buffers_to_string(buffer.data()));
+            const std::string& req = queue.push(static_cast<const char*>(buffer.data().data()), buffer.size());
+            std::tie(okay, rep) = request_handler(queue.pop());
 
             if (not okay) {
-                return fail(RequestHandlerErrorCode{}, "request_handler");
+              return fail(RequestHandlerErrorCode{}, "request_handler");
             }
 
-            // buffer_rep.data() = ;
-            // size_t n = net::buffer_copy(buffer_rep.prepare(rep.size()),
-
-            // net::buffer(rep));
-            // buffer_rep.commit(n);
-            // buffer_rep.prepare(rep.size()) = { rep.data(), rep.size() };
-            // buffer_rep.commit(rep.size());
-
-            ws.write(net::buffer(rep), ec);
-
-            if (ec) {
+            size_t n = net::buffer_copy(buffer_rep.prepare(rep.size()), net::buffer(rep));
+            buffer_rep.commit(n);
+            ws.write(buffer_rep.data(), ec);
+            if (ec)
                 return fail(ec, "write");
-            }
 
             // // Clear the buffer
             buffer.consume(buffer.size());
@@ -144,60 +154,45 @@ void run_sync(tcp::socket socket) {
         }
 
     } catch (beast::system_error const& se) {
-        if (se.code() == websocket::error::closed) {
-          std::string msg = "ERROR! websocket::error::closed was caught instead causing graceful termination";
-          throw std::runtime_error(msg);
+        // Session was closed
+        if (se.code() != websocket::error::closed) {
+            std::cerr << "Unexpected server error: " << se.code().message()
+                      << std::endl;
         }
-
-        std::cerr << "Server error: " << se.code().message()
-                  << std::endl;
-
     } catch (std::exception const& e) {
-        std::cerr << "Unexpected server error: " << e.what()
+        std::cerr << "Unexpected implementation error: " << e.what()
                   << std::endl;
     }
-}
-
-void run_forever(std::string_view address, int port, ) {
-
 }
 
 int main(int argc, char* argv[]) {
 
-    if (argc < 3) {
-      std::cerr << "Usage: serverbackend <address> <port> [threads]\n"
-                << "Example:\n"
-                << "    serverbackend 0.0.0.0 8080 [2]\n";
-      return EXIT_FAILURE;
-    }
-
     beast::error_code ec;
 
-    // Get tcp socket endpoint from command line arguments
-    auto address = net::ip::make_address(argv[1], ec);
-    auto port = static_cast<net::ip::port_type>(std::atoi(argv[2]));
-    tcp::endpoint endpoint = { address, port };
-
-    int n_threads = 1;
-
-    if (argc == 4) {
-      n_threads = std::atoi(argv[3]);
-    }
-
-    // The io_context is required for all I/O
-    net::io_context ioc(n_threads);
-
     try {
+        // Parse command line arguments.
+        if (argc != 3) {
+            std::cerr << "Usage: serverbackend <address> <port>\n"
+                      << "Example:\n"
+                      << "    serverbackend 0.0.0.0 8080\n";
+            return EXIT_FAILURE;
+        }
+
+        auto address = net::ip::make_address(argv[1]);
+        auto port = static_cast<unsigned short>(std::atoi(argv[2]));
+
+        // The io_context is required for all I/O
+        net::io_context ioc;
+
         // Listen for incoming connections
-        tcp::acceptor acceptor(ioc, endpoint);
-        std::cout << "Websocket accepting connections at "
-                    << address << ": " << port << std::endl;
+        tcp::acceptor acceptor(ioc, {address, port});
 
         for (;;) {
 
-          net::socket_base::linger linger(true, 10);
-          tcp::socket socket{ioc};
-          socket.set_option(linger);
+            tcp::socket socket{ioc};
+
+            std::cout << "Websocket accepting connections at " << address
+                      << ": " << port << std::endl;
 
             // Block until we get a connection
             acceptor.accept(socket, ec);
@@ -210,9 +205,7 @@ int main(int argc, char* argv[]) {
                       << std::endl;
 
             // Launch the session
-            run_sync(std::move(socket));
-
-                // std::thread(&run_sync, std::move(socket)).detach();
+            std::thread(&run, std::move(socket)).detach();
         }
     } catch (const std::exception& e) {
         std::cerr << "Unexpected error during initialization: " << e.what()
