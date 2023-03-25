@@ -9,6 +9,7 @@ import {
 import type { Query, QueryForm, QueryResult, Parameter } from "@/data/types";
 
 function cmpEqual(a: QueryForm) {
+  const [model, policy, options] = a;
   const _cmpEqual = (
     queryParameters: Record<string, number>,
     queryFormParameters: Parameter[]
@@ -20,21 +21,21 @@ function cmpEqual(a: QueryForm) {
   };
   return (b: Query) => {
     return (
-      a.model.name === b.modelName &&
-      a.policy.name === b.policyName &&
-      _cmpEqual(b.modelParameters, a.model.parameters) &&
-      _cmpEqual(b.policyParameters, a.policy.parameters) &&
-      _cmpEqual(b.options, a.options)
+      model.name === b.modelName &&
+      policy.name === b.policyName &&
+      _cmpEqual(b.modelParameters, model.parameters) &&
+      _cmpEqual(b.policyParameters, policy.parameters) &&
+      _cmpEqual(b.optionsParameters, options.parameters)
     );
   };
 }
 
 function makeQuery(queryForm: QueryForm): Query {
-  const {
-    model: { name: modelName, parameters: modelParameters },
-    policy: { name: policyName, parameters: policyParameters },
-    options,
-  } = queryForm;
+  const [
+    { name: modelName, parameters: modelParameters },
+    { name: policyName, parameters: policyParameters },
+    { name: optionsName, parameters: optionsParameters },
+  ] = queryForm;
   return {
     id: uniqueId("query-"),
     modelName,
@@ -45,8 +46,9 @@ function makeQuery(queryForm: QueryForm): Query {
     policyParameters: Object.fromEntries(
       policyParameters.map((param) => [param.name, param.value])
     ),
-    options: Object.fromEntries(
-      options.map((param) => [param.name, param.value])
+    optionsName,
+    optionsParameters: Object.fromEntries(
+      optionsParameters.map((param) => [param.name, param.value])
     ),
   };
 }
@@ -127,7 +129,7 @@ export const useQueryStore = defineStore("queryStore", () => {
    * Send the current query to the backend through the WebSocket
    */
   function submit(form: QueryForm) {
-    const {model, policy, options} = form;
+    const [model, policy, options] = form;
 
     const _cmpEqual = cmpEqual(form);
 
@@ -159,6 +161,8 @@ export const useQueryStore = defineStore("queryStore", () => {
         ws
       );
     }
+
+    console.log("Sending query", query)
 
     // Submit query and add it to history if no error occurs.
     wsSend(JSON.stringify(query));

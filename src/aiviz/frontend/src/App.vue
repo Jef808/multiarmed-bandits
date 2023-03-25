@@ -5,8 +5,8 @@ import {useQueryStore} from "./store/query.store";
 import QueryForm from "./components/QueryForm.vue";
 import D3LineChart from "./components/D3LineChart.vue";
 
-const {wsStatus, wsUrl, currentId} = storeToRefs(useQueryStore());
-const {wsReset, wsClose} = useQueryStore();
+const {wsStatus, wsUrl, currentId, resultsData} = storeToRefs(useQueryStore());
+const {wsReset, wsClose, submit} = useQueryStore();
 
 const tab = ref("query");
 
@@ -32,30 +32,34 @@ const wsColor = computed(() => {
 const chartType = ref("lineChart" as "lineChart" | "violinChart");
 
 // Compute the value of the first series of the last result.
-// const currentValues = computed(() => {
-//   const resultId = currentId.value;
-//   console.log("Result Id: ", resultId);
-//
-//   const results = resultsData.value.get(resultId);
-//   console.log("Result: ", results);
-//
-//   if (results !== undefined) {
-//     return results[0].values; // Pick the first series' values
-//   }
-// });
+const currentValues = computed(() => {
+  const resultId = currentId.value;
+  console.log("Result Id: ", resultId);
 
-// const chartProps = computed(() => ({
-//   id: currentId.value, // the id of the corresponding query
-//   name: "rewards", // the name of the series containing the results
-//   values: currentValues.value?.map(({step, value}) => ({
-//     x: step as number,
-//     y: value as number,
-//   })),
-//   width: 1000,
-//   height: 500,
-//   xPadding: 30,
-//   yPadding: 30,
-// }));
+  const results = resultsData.value.get(resultId);
+  console.log("Result: ", results);
+
+  if (results !== undefined) {
+    return results[0].values; // Pick the first series' values
+  }
+});
+
+const chartProps = computed(() => {
+  const ret = {
+    id: currentId.value, // the id of the corresponding query
+    name: "rewards", // the name of the series containing the results
+    values: currentValues.value?.map(({step, value}) => ({
+      x: step as number,
+      y: value as number,
+    })),
+    width: 1000,
+    height: 500,
+    xPadding: 30,
+    yPadding: 30,
+  };
+  console.log("chartProps:", ret);
+  return ret;
+});
 </script>
 
 <template>
@@ -85,14 +89,16 @@ const chartType = ref("lineChart" as "lineChart" | "violinChart");
       <v-window v-model="tab">
         <v-window-item value="query">
           <template #default>
-            <QueryForm />
+            <QueryForm :handleSubmit="submit"></QueryForm>
           </template>
         </v-window-item>
 
         <v-window-item value="viewer">
           <template #default>
             <v-card flat>
-              <v-card-text>Place viewer here...</v-card-text>
+              <v-card-text>
+                <D3LineChart v-bind="chartProps"></D3LineChart>
+              </v-card-text>
             </v-card>
           </template>
         </v-window-item>

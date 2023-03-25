@@ -5,7 +5,7 @@ export default {
 </script>
 
 <script setup lang="ts">
-import {reactive, ref, toRefs, watch, onBeforeMount, type Ref} from "vue";
+import {ref, watch} from "vue";
 import type {Parameter} from "../data/types";
 
 export interface Props {
@@ -58,7 +58,7 @@ function onCancel() {
     <v-list lines="two">
       <v-list-item v-for="(param, idx) in modelValue" :key="idx">
         <v-list-item-title>
-          <span>{{ param.label }}: </span>
+          <span>{{ param.label }}:</span>
         </v-list-item-title>
         <v-list-item-subtitle>
           <pre>modelValues[idx]: {{ modelValues[idx] }}</pre>

@@ -6,7 +6,7 @@ export default {
 </script>
 
 <script setup lang="ts">
-import {reactive, ref, onBeforeMount, type Ref} from "vue";
+import {reactive, ref, unref, onBeforeMount, type Ref} from "vue";
 import ParametersForm from "./ParametersForm.vue";
 import {useData} from "../data/data";
 import type {DataModel} from "../data/types";
@@ -15,11 +15,17 @@ import type {DataModel} from "../data/types";
 // and make the call to useDataModel() here, passing each column
 // item to the formSection components as props.
 
+export interface Props {
+  handleSubmit: (dms: DataModel[]) => void;
+}
+
+const props = defineProps<Props>();
+
 let sections = [] as {title: string; items: DataModel[]}[];
 
 const loading = ref(false);
 const selectable = reactive([] as boolean[]);
-const selected = [] as Ref<DataModel>[];
+const selected = reactive([] as Ref<DataModel>[]);
 
 onBeforeMount(() => {
   sections = useData();
@@ -32,10 +38,8 @@ onBeforeMount(() => {
 
 // Mock form submission
 function onSubmit() {
-  loading.value = true;
-  setTimeout(() => {
-    loading.value = false;
-  }, 1000);
+  console.log("submit");
+  props.handleSubmit(selected.map((dataModel) => unref(dataModel)));
 }
 </script>
 
@@ -54,7 +58,6 @@ function onSubmit() {
               <v-spacer></v-spacer>
 
               <v-col cols="8">
-                <!-- Put select element here -->
                 <v-select
                   v-model="selected[idx].value"
                   :items="section.items"
@@ -62,8 +65,7 @@ function onSubmit() {
                   item-value="name"
                   returnObject
                   :disabled="!selectable[idx]"
-                >
-                </v-select>
+                ></v-select>
               </v-col>
 
               <v-spacer></v-spacer>
@@ -71,13 +73,11 @@ function onSubmit() {
             <v-row>
               <v-spacer></v-spacer>
               <v-col cols="8">
-                <!-- Put selected parameters input here -->
                 <ParametersForm
                   :name="selected[idx].value.name"
                   :label="selected[idx].value.label"
                   v-model="selected[idx].value.parameters"
-                >
-                </ParametersForm>
+                ></ParametersForm>
 
                 <v-spacer></v-spacer>
               </v-col>
@@ -91,9 +91,9 @@ function onSubmit() {
       <v-spacer></v-spacer>
 
       <v-col cols="8">
-        <v-btn :disabled="loading" :loading="loading" type="submit" block>
-          Submit
-        </v-btn>
+        <v-btn :disabled="loading" :loading="loading" type="submit" block
+          >Submit</v-btn
+        >
       </v-col>
 
       <v-spacer></v-spacer>

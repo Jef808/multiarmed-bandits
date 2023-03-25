@@ -25,13 +25,9 @@ export type DataModel = {
 
 export type Model = DataModel;
 export type Policy = DataModel;
-export type Option = Parameter;
+export type Options = DataModel;
 
-export interface QueryForm {
-  model: Model;
-  policy: Policy;
-  options: Option[];
-}
+export type QueryForm = DataModel[];
 
 export interface Query {
   id: string;
@@ -39,7 +35,8 @@ export interface Query {
   modelParameters: { [paramName: string]: number };
   policyName: string;
   policyParameters: { [paramName: string]: number };
-  options: { [optionName: string]: number };
+  optionsName: string;
+  optionsParameters: { [optionName: string]: number };
 }
 
 export type Series = { step: number; value: number }[];
